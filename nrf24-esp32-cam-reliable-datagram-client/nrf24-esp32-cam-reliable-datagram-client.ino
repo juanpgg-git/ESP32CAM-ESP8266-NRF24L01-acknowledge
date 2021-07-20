@@ -46,6 +46,7 @@ void loop()
   // Send a message to manager_server
   if (manager.sendtoWait(data, sizeof(data), SERVER_ADDRESS))
   {
+    /*
     // Now wait for a reply from the server
     uint8_t len = sizeof(buf);
     uint8_t from;   
@@ -60,6 +61,7 @@ void loop()
     {
       Serial.println("No reply, is nrf24_reliable_datagram_server running?");
     }
+    */
   }
   else
     Serial.println("sendtoWait failed");

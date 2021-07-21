@@ -81,7 +81,7 @@ void loop()
     delay(200);
 
     //send pixel data as an an array of numbers
-    for(int i = 0; i < 10; i++){
+    for(int i = 0; i < 100; i++){
 
       pixel[0] = image->buf[i];
       

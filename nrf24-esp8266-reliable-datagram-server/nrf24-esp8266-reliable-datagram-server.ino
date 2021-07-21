@@ -36,6 +36,23 @@ void setup()
 {
   Serial.begin(115200);
   init_nrf24();
+
+  int a = 0;
+
+  if( a == 1){
+
+    Serial.println("1 xd");
+  }
+  else if( a == 2){
+    Serial.println("2 xd");
+  }
+  else if( a == 0){
+    Serial.println("0 xd");
+  }
+  else if(a == 0){
+    Serial.println("2 0 xd");
+  }
+  
 }
 
 // Dont put this on the stack:
@@ -69,7 +86,7 @@ void loop()
         counter = 0; 
       }
       
-      if(counter > 1){
+      else if(counter > 1){
 
         //counter 1 is buffer length, counter 2 and so on are pixel data
         image[0 + (counter - 2)] = buf[0];
@@ -83,7 +100,7 @@ void loop()
       }
       
       //this would be buffer length
-      if(counter == 1){
+      else if(counter == 1){
 
        //the buffer length comes as an array of characters,
        //so convert it into an int
@@ -99,7 +116,7 @@ void loop()
       }
 
       //if the received message is equal to "Start" then the communication started
-      if(memcmp(buf, start_com, 5) == 0){
+      else if(memcmp(buf, start_com, 5) == 0){
         
        Serial.println((char*)buf);
 

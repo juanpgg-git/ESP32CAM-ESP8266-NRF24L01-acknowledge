@@ -22,16 +22,20 @@ RH_NRF24 driver(15, 2, spi);
 // Class to manage message delivery and receipt, using the driver declared above
 RHReliableDatagram manager(driver, CLIENT_ADDRESS);
 
+int buffer_length;
+char char_buffer_length[5];
+
+uint8_t pixel[1];
+
 void setup() 
 {
   spi.setPins(12, 13, 14);
-  Serial.begin(9600);
+  Serial.begin(115200);
   init_nrf24();
-  setup_camera();
-  
+  setup_camera(); 
 }
 
-uint8_t data[] = "Hello World!";
+uint8_t start_com[] = "Start communication";
 // Dont put this on the stack:
 uint8_t buf[RH_NRF24_MAX_MESSAGE_LEN];
 
@@ -44,17 +48,39 @@ void loop()
     delay(1000);
     ESP.restart();
   }
-
-  Serial.println(image->len);
   
-  Serial.println("Sending to nrf24_reliable_datagram_server");
+  /*send an array of characters
+  buffer_length = image->len;
+  itoa(buffer_length, char_buffer_length, 10);
+  if (!manager.sendtoWait((uint8_t*)char_buffer_length, sizeof(char_buffer_length), SERVER_ADDRESS)){//returns true if success
+      
+      Serial.println("len fail");
+  } 
+  */
+  /*send an array of numbers
+  pixel[0] = image->buf[0];
+  Serial.println(pixel[0]);
+  
+  if (!manager.sendtoWait(pixel, sizeof(pixel), SERVER_ADDRESS)){//returns true if success
+      
+      Serial.println("pixel fail");
+  } 
+  */
+  
+  /*
+  //ESP8266 can only allocate less than 52k bytes,
+  //so to be sure, send only images < 45000 bytes
+  if((image->len) < 45000){
     
-  // Send a message to manager_server
-  if (!manager.sendtoWait(data, sizeof(data), SERVER_ADDRESS))//returns true if success
-  {
-    Serial.println("sendtoWait failed");
+    Serial.println("Sending to nrf24_reliable_datagram_server");
+    
+    // Send "Start communication"
+    if (!manager.sendtoWait(start_com, sizeof(start_com), SERVER_ADDRESS)){//returns true if success
+      
+      Serial.println("sendtoWait failed");
+    }
   }
-
+  */
   esp_camera_fb_return(image);
   
   delay(500);

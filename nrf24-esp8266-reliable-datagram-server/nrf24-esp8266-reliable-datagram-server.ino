@@ -95,7 +95,7 @@ void loop()
        
        Serial.println(char_buffer_length);
        
-       counter++;
+       counter = 2;
       }
 
       //if the received message is equal to "Start" then the communication started
@@ -103,7 +103,7 @@ void loop()
         
        Serial.println((char*)buf);
 
-       counter++;
+       counter = 1;
       }
     }
   }

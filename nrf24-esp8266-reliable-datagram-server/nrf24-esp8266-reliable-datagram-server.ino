@@ -56,6 +56,7 @@ void loop()
         
         Serial.println((char*)buf);
 
+        //testing with sending 10 pixels
         for(int i = 0; i < 10; i++){
          
           Serial.println(image[i]);
@@ -90,7 +91,7 @@ void loop()
        buffer_length = atoi(char_buffer_length);       
 
        //allocate a very big memory for the image buffer
-       image = (uint8_t*)calloc(45000, 1);
+       image = (uint8_t*)calloc(buffer_length, 1);
        
        Serial.println(char_buffer_length);
        

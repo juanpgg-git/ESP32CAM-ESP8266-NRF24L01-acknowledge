@@ -1,17 +1,10 @@
-// nrf24_reliable_datagram_client.pde
-// -*- mode: C++ -*-
-// Example sketch showing how to create a simple addressed, reliable messaging client
-// with the RHReliableDatagram class, using the RH_NRF24 driver to control a NRF24 radio.
-// It is designed to work with the other example nrf24_reliable_datagram_server
-// Tested on Uno with Sparkfun WRL-00691 NRF24L01 module
-// Tested on Teensy with Sparkfun WRL-00691 NRF24L01 module
-// Tested on Anarduino Mini (http://www.anarduino.com/mini/) with RFM73 module
-// Tested on Arduino Mega with Sparkfun WRL-00691 NRF25L01 module
-
 #include <RHReliableDatagram.h>
 #include <RH_NRF24.h>
 #include <RHSoftwareSPI.h>
 #include <SPI.h>
+
+//function declaration
+void init_nrf24();
 
 #define CLIENT_ADDRESS 1
 #define SERVER_ADDRESS 2
@@ -21,7 +14,6 @@ RHSoftwareSPI spi;
 
 // Singleton instance of the radio driver
 RH_NRF24 driver(15, 2, spi);
-// RH_NRF24 driver(8, 7);   // For RFM73 on Anarduino Mini
 
 // Class to manage message delivery and receipt, using the driver declared above
 RHReliableDatagram manager(driver, CLIENT_ADDRESS);
@@ -30,9 +22,8 @@ void setup()
 {
   spi.setPins(12, 13, 14);
   Serial.begin(9600);
-  if (!manager.init())
-    Serial.println("init failed");
-  // Defaults after init are 2.402 GHz (channel 2), 2Mbps, 0dBm
+  init_nrf24();
+  
 }
 
 uint8_t data[] = "Hello World!";
@@ -66,4 +57,17 @@ void loop()
   else
     Serial.println("sendtoWait failed");
   delay(500);
+}
+
+void init_nrf24(){
+  
+  if (!manager.init()){
+
+    Serial.println("init failed");
+  }
+  else{
+
+    Serial.println("init succeed");
+  }
+  // Defaults after init are 2.402 GHz (channel 2), 2Mbps, 0dBm
 }

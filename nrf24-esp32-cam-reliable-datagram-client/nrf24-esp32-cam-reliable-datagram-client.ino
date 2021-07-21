@@ -35,7 +35,9 @@ void setup()
   setup_camera(); 
 }
 
-uint8_t start_com[] = "Start communication";
+uint8_t start_com[] = "Start";
+uint8_t finish_com[] = "Finish";
+
 // Dont put this on the stack:
 uint8_t buf[RH_NRF24_MAX_MESSAGE_LEN];
 
@@ -48,42 +50,50 @@ void loop()
     delay(1000);
     ESP.restart();
   }
-  
-  /*send an array of characters
+
   buffer_length = image->len;
   itoa(buffer_length, char_buffer_length, 10);
-  if (!manager.sendtoWait((uint8_t*)char_buffer_length, sizeof(char_buffer_length), SERVER_ADDRESS)){//returns true if success
-      
-      Serial.println("len fail");
-  } 
-  */
-  /*send an array of numbers
-  pixel[0] = image->buf[0];
-  Serial.println(pixel[0]);
   
-  if (!manager.sendtoWait(pixel, sizeof(pixel), SERVER_ADDRESS)){//returns true if success
-      
-      Serial.println("pixel fail");
-  } 
-  */
-  
-  /*
   //ESP8266 can only allocate less than 52k bytes,
   //so to be sure, send only images < 45000 bytes
   if((image->len) < 45000){
     
-    Serial.println("Sending to nrf24_reliable_datagram_server");
+    Serial.println("Start");
     
     // Send "Start communication"
     if (!manager.sendtoWait(start_com, sizeof(start_com), SERVER_ADDRESS)){//returns true if success
       
-      Serial.println("sendtoWait failed");
+      Serial.println("start failed");
     }
+    delay(200);
+    //send the buffer length as an arrray of characters
+    if (!manager.sendtoWait((uint8_t*)char_buffer_length, sizeof(char_buffer_length), SERVER_ADDRESS)){//returns true if success
+      Serial.print(char_buffer_length);
+      Serial.println(" len failed");
+    } 
+    delay(200);
+
+    //send an array of numbers
+    for(int i = 0; i < 10; i++){
+      
+      pixel[0] = image->buf[i];
+      
+      if (!manager.sendtoWait(pixel, sizeof(pixel), SERVER_ADDRESS)){//returns true if success
+      
+      Serial.println("pixel fail");
+      } 
+    }
+
+   if (!manager.sendtoWait(finish_com, sizeof(finish_com), SERVER_ADDRESS)){//returns true if success
+      
+      Serial.println("start failed");
+   }
+   Serial.println("finish"); 
   }
-  */
+   
   esp_camera_fb_return(image);
   
-  delay(500);
+  delay(5000);
 }
 
 void init_nrf24(){

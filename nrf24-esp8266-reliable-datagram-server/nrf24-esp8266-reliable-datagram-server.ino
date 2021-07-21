@@ -57,7 +57,7 @@ void loop()
         Serial.println((char*)buf);
 
         //testing with sending 10 pixels
-        for(int i = 0; i < 10; i++){
+        for(int i = 0; i < 100; i++){
          
           Serial.println(image[i]);
         }
@@ -95,7 +95,7 @@ void loop()
        
        Serial.println(char_buffer_length);
        
-       counter++;
+       counter = 2;
       }
 
       //if the received message is equal to "Start" then the communication started
@@ -103,7 +103,7 @@ void loop()
         
        Serial.println((char*)buf);
 
-       counter++;
+       counter = 1;
       }
     }
   }

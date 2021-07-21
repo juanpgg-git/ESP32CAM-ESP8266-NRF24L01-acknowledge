@@ -22,10 +22,17 @@ RH_NRF24 driver(15, 2, spi);
 // Class to manage message delivery and receipt, using the driver declared above
 RHReliableDatagram manager(driver, CLIENT_ADDRESS);
 
+//RadioHead library accepts an array of characters, so convert the
+//buffer length to an array of characters
 int buffer_length;
 char char_buffer_length[5];
 
+//an array of numbers to store pixel data
 uint8_t pixel[1];
+
+//to let the receiver know the communication started or finished
+uint8_t start_com[] = "Start";
+uint8_t finish_com[] = "Finish";
 
 void setup() 
 {
@@ -34,9 +41,6 @@ void setup()
   init_nrf24();
   setup_camera(); 
 }
-
-uint8_t start_com[] = "Start";
-uint8_t finish_com[] = "Finish";
 
 // Dont put this on the stack:
 uint8_t buf[RH_NRF24_MAX_MESSAGE_LEN];
@@ -51,44 +55,48 @@ void loop()
     ESP.restart();
   }
 
+  //convert the buffer length to an array of characters
   buffer_length = image->len;
   itoa(buffer_length, char_buffer_length, 10);
   
-  //ESP8266 can only allocate less than 52k bytes,
+  //ESP8266 can only allocate memory for up to 52k bytes,
   //so to be sure, send only images < 45000 bytes
   if((image->len) < 45000){
     
     Serial.println("Start");
     
-    // Send "Start communication"
-    if (!manager.sendtoWait(start_com, sizeof(start_com), SERVER_ADDRESS)){//returns true if success
+    // Send "Start"
+    if (!manager.sendtoWait(start_com, sizeof(start_com), SERVER_ADDRESS)){
       
-      Serial.println("start failed");
+      Serial.println("Start failed");
     }
     delay(200);
+    
     //send the buffer length as an arrray of characters
-    if (!manager.sendtoWait((uint8_t*)char_buffer_length, sizeof(char_buffer_length), SERVER_ADDRESS)){//returns true if success
+    if (!manager.sendtoWait((uint8_t*)char_buffer_length, sizeof(char_buffer_length), SERVER_ADDRESS)){
+      
       Serial.print(char_buffer_length);
       Serial.println(" len failed");
     } 
     delay(200);
 
-    //send an array of numbers
+    //send pixel data as an an array of numbers
     for(int i = 0; i < 10; i++){
-      
+
       pixel[0] = image->buf[i];
       
-      if (!manager.sendtoWait(pixel, sizeof(pixel), SERVER_ADDRESS)){//returns true if success
-      
-      Serial.println("pixel fail");
+      if (!manager.sendtoWait(pixel, sizeof(pixel), SERVER_ADDRESS)){
+        
+        Serial.println("pixel fail");
       } 
     }
 
    if (!manager.sendtoWait(finish_com, sizeof(finish_com), SERVER_ADDRESS)){//returns true if success
       
-      Serial.println("start failed");
+      Serial.println("Finish failed");
    }
-   Serial.println("finish"); 
+   
+   Serial.println("Finish"); 
   }
    
   esp_camera_fb_return(image);

@@ -35,27 +35,11 @@ void loop()
   Serial.println("Sending to nrf24_reliable_datagram_server");
     
   // Send a message to manager_server
-  if (manager.sendtoWait(data, sizeof(data), SERVER_ADDRESS))
+  if (!manager.sendtoWait(data, sizeof(data), SERVER_ADDRESS))//returns true if success
   {
-    /*
-    // Now wait for a reply from the server
-    uint8_t len = sizeof(buf);
-    uint8_t from;   
-    if (manager.recvfromAckTimeout(buf, &len, 2000, &from))
-    {
-      Serial.print("got reply from : 0x");
-      Serial.print(from, HEX);
-      Serial.print(": ");
-      Serial.println((cha r*)buf);
-    }
-    else
-    {
-      Serial.println("No reply, is nrf24_reliable_datagram_server running?");
-    }
-    */
-  }
-  else
     Serial.println("sendtoWait failed");
+  }
+    
   delay(500);
 }
 

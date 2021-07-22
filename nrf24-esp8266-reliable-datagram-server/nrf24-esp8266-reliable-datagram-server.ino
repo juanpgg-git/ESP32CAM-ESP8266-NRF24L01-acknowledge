@@ -36,23 +36,6 @@ void setup()
 {
   Serial.begin(115200);
   init_nrf24();
-
-  int a = 0;
-
-  if( a == 1){
-
-    Serial.println("1 xd");
-  }
-  else if( a == 2){
-    Serial.println("2 xd");
-  }
-  else if( a == 0){
-    Serial.println("0 xd");
-  }
-  else if(a == 0){
-    Serial.println("2 0 xd");
-  }
-  
 }
 
 // Dont put this on the stack:
@@ -67,7 +50,39 @@ void loop()
     uint8_t from;
     
     if (manager.recvfromAck(buf, &len, &from)){
-
+      //dummy code to test array of 28 numbers
+        Serial.print("got request from : 0x");
+        Serial.print(from, HEX);
+        Serial.print(": ");
+        Serial.println(buf[0]);
+        Serial.println(buf[1]);
+        Serial.println(buf[2]);
+        Serial.println(buf[3]);
+        Serial.println(buf[4]);
+        Serial.println(buf[5]);
+        Serial.println(buf[6]);
+        Serial.println(buf[7]);
+        Serial.println(buf[8]);
+        Serial.println(buf[9]);
+        Serial.println(buf[10]);
+        Serial.println(buf[11]);
+        Serial.println(buf[12]);
+        Serial.println(buf[13]);
+        Serial.println(buf[14]);
+        Serial.println(buf[15]);
+        Serial.println(buf[16]);
+        Serial.println(buf[17]);
+        Serial.println(buf[18]);
+        Serial.println(buf[19]);
+        Serial.println(buf[20]);
+        Serial.println(buf[21]);
+        Serial.println(buf[22]);
+        Serial.println(buf[23]);
+        Serial.println(buf[24]);
+        Serial.println(buf[25]);
+        Serial.println(buf[26]);
+        Serial.println(buf[27]);
+      /*
       //if the received message is equal to "Finish" then the communication finished
       if(memcmp(buf, finish_com, 6) == 0){
         
@@ -90,12 +105,7 @@ void loop()
 
         //counter 1 is buffer length, counter 2 and so on are pixel data
         image[0 + (counter - 2)] = buf[0];
-        /*
-        Serial.print("got request from : 0x");
-        Serial.print(from, HEX);
-        Serial.print(": ");
-        Serial.println(buf[0]);
-        */
+    
         counter++;
       }
       
@@ -122,6 +132,7 @@ void loop()
 
        counter = 1;
       }
+      */
     }
   }
 }

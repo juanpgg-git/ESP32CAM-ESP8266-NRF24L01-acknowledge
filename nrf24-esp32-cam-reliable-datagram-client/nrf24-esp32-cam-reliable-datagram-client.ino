@@ -83,7 +83,8 @@ void loop()
       Serial.println(" len failed");
     } 
     delay(200);
-    
+
+    //send pixel data in an array of 28 numbers each time
     int i, j = 0;
     for(i = 0; i < 2799; i+=28){
        for(j = 0; j < 28; j++){
@@ -102,10 +103,13 @@ void loop()
    
    Serial.println("Finish"); 
   }
-
+  
+  for(int i = 0; i < 83; i++){
+    Serial.println(image->buf[i]);
+  }
   esp_camera_fb_return(image);
   
-  delay(5000);
+  delay(10000);
 }
 
 void init_nrf24(){

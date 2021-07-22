@@ -54,13 +54,25 @@ void loop()
     delay(1000);
     ESP.restart();
   }
-
+  //dummy payload to test increase in velocity
+  uint8_t test[28] = {111,222,012, 123, 213, 101, 100, 
+                      129, 156, 111,223, 211, 100, 99,
+                      98, 97, 55, 54, 44, 12,200, 201,
+                      203, 204, 205, 101, 102, 104};
+  if (!manager.sendtoWait(test, sizeof(test), SERVER_ADDRESS)){
+        
+    Serial.println("pixel fail");
+  }
+      
+       
+  
   //convert the buffer length to an array of characters
   buffer_length = image->len;
   itoa(buffer_length, char_buffer_length, 10);
   
   //ESP8266 can only allocate memory for up to 52k bytes,
   //so to be sure, send only images < 45000 bytes
+  /*
   if((image->len) < 45000){
     
     Serial.println("Start");
@@ -98,7 +110,7 @@ void loop()
    
    Serial.println("Finish"); 
   }
-   
+   */
   esp_camera_fb_return(image);
   
   delay(5000);

@@ -129,4 +129,5 @@ void init_nrf24(){
     Serial.println("init succeed");
   }
   // Defaults after init are 2.402 GHz (channel 2), 2Mbps, 0dBm
+
 }

@@ -30,16 +30,18 @@ int buffer_length = 0;
 uint16_t counter = 0;
 
 //pointer to the image buffer
-uint8_t * image;
+uint8_t * image = NULL;
+
+// Dont put this on the stack:
+uint8_t buf[RH_NRF24_MAX_MESSAGE_LEN];
 
 void setup() 
 {
   Serial.begin(115200);
-  init_nrf24();
+  init_nrf24();   
 }
 
-// Dont put this on the stack:
-uint8_t buf[RH_NRF24_MAX_MESSAGE_LEN];
+
 
 void loop()
 {
@@ -50,65 +52,39 @@ void loop()
     uint8_t from;
     
     if (manager.recvfromAck(buf, &len, &from)){
-      /*
-      //dummy code to test array of 28 numbers
-        Serial.print("got request from : 0x");
-        Serial.print(from, HEX);
-        Serial.print(": ");
-        Serial.println(buf[0]);
-        Serial.println(buf[1]);
-        Serial.println(buf[2]);
-        Serial.println(buf[3]);
-        Serial.println(buf[4]);
-        Serial.println(buf[5]);
-        Serial.println(buf[6]);
-        Serial.println(buf[7]);
-        Serial.println(buf[8]);
-        Serial.println(buf[9]);
-        Serial.println(buf[10]);
-        Serial.println(buf[11]);
-        Serial.println(buf[12]);
-        Serial.println(buf[13]);
-        Serial.println(buf[14]);
-        Serial.println(buf[15]);
-        Serial.println(buf[16]);
-        Serial.println(buf[17]);
-        Serial.println(buf[18]);
-        Serial.println(buf[19]);
-        Serial.println(buf[20]);
-        Serial.println(buf[21]);
-        Serial.println(buf[22]);
-        Serial.println(buf[23]);
-        Serial.println(buf[24]);
-        Serial.println(buf[25]);
-        Serial.println(buf[26]);
-        Serial.println(buf[27]);
-        */
-      /*
+      
       //if the received message is equal to "Finish" then the communication finished
       if(memcmp(buf, finish_com, 6) == 0){
         
         Serial.println((char*)buf);
-
-        //testing with sending 10 pixels
-        for(int i = 0; i < 100; i++){
+          
+          //testing with sending 279 pixels
+          for(int i = 0; i < 83; i++){
          
           Serial.println(image[i]);
+          }
+        
+        //to avoid unexpected behavior 
+        if(image != NULL){
+          
+          //free the allocated memory for the image buffer
+          free(image);
         }
         
-        //free the allocated memory for the image buffer
-        free(image);
-
         //reset the counter for the next communication
         counter = 0; 
       }
       
       else if(counter > 1){
-
-        //counter 1 is buffer length, counter 2 and so on are pixel data
-        image[0 + (counter - 2)] = buf[0];
-    
-        counter++;
+        
+        //counter 2 and so on are pixel data
+        int i = 0;
+        
+        for(i = 0; i < 28; i++){
+          image[i + (counter - 2)] = buf[i];
+        }
+       
+        counter += 28;
       }
       
       //this would be buffer length
@@ -131,10 +107,9 @@ void loop()
       else if(memcmp(buf, start_com, 5) == 0){
         
        Serial.println((char*)buf);
-
+       
        counter = 1;
       }
-      */
     }
   }
 }

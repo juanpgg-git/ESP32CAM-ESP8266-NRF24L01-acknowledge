@@ -50,6 +50,7 @@ void loop()
     uint8_t from;
     
     if (manager.recvfromAck(buf, &len, &from)){
+      /*
       //dummy code to test array of 28 numbers
         Serial.print("got request from : 0x");
         Serial.print(from, HEX);
@@ -82,6 +83,7 @@ void loop()
         Serial.println(buf[25]);
         Serial.println(buf[26]);
         Serial.println(buf[27]);
+        */
       /*
       //if the received message is equal to "Finish" then the communication finished
       if(memcmp(buf, finish_com, 6) == 0){

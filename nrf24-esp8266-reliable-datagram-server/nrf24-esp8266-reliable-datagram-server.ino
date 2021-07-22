@@ -59,7 +59,7 @@ void loop()
         Serial.println((char*)buf);
           
           //testing with sending 279 pixels
-          for(int i = 0; i < 83; i++){
+          for(int i = 0; i < 2799; i++){
          
           Serial.println(image[i]);
           }

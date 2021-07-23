@@ -7,6 +7,7 @@
 
 //function declaration
 void init_nrf24();
+void print_image();
 
 // Singleton instance of the radio driver
 RH_NRF24 driver(2, 4);
@@ -35,34 +36,32 @@ uint8_t * image = NULL;
 // Dont put this on the stack:
 uint8_t buf[RH_NRF24_MAX_MESSAGE_LEN];
 
+uint8_t final_pixel_chunk;
+uint32_t chunks;
+
+uint8_t final_chunk[] = "Final chunk";
+bool last = false;
+
 void setup() 
 {
   Serial.begin(115200);
   init_nrf24();   
 }
 
-
-
-void loop()
-{
+void loop(){
+  
   if (manager.available()){
     
     // Wait for a message addressed to us from the client
     uint8_t len = sizeof(buf);
-    uint8_t from;
-    
-    if (manager.recvfromAck(buf, &len, &from)){
-      
+    if (manager.recvfromAck(buf, &len)){
+
       //if the received message is equal to "Finish" then the communication finished
       if(memcmp(buf, finish_com, 6) == 0){
         
         Serial.println((char*)buf);
-          
-          //testing with sending 279 pixels
-          for(int i = 0; i < 2799; i++){
-         
-          Serial.println(image[i]);
-          }
+
+        print_image();
         
         //to avoid unexpected behavior 
         if(image != NULL){
@@ -73,18 +72,33 @@ void loop()
         
         //reset the counter for the next communication
         counter = 0; 
+        last = false;
       }
       
-      else if(counter > 1){
+      else if(last){
         
+        for(int i = 0; i < final_pixel_chunk; i++){
+          image[i + chunks] = buf[i];
+        }
+        last = false;
+      }
+      
+      else if(memcmp(buf, final_chunk, 11) == 0){
+        
+        last = true;
+      }
+      
+
+      
+      else if(counter > 1){
+        Serial.println(".");
         //counter 2 and so on are pixel data
         int i = 0;
-        
         for(i = 0; i < 28; i++){
           image[i + (counter - 2)] = buf[i];
         }
-       
-        counter += 28;
+
+        counter += 28;        
       }
       
       //this would be buffer length
@@ -95,6 +109,9 @@ void loop()
        memcpy(char_buffer_length, buf, 5);
        buffer_length = atoi(char_buffer_length);       
 
+       final_pixel_chunk = buffer_length % 28;
+       chunks = buffer_length - final_pixel_chunk; 
+       
        //allocate a very big memory for the image buffer
        image = (uint8_t*)calloc(buffer_length, 1);
        
@@ -130,4 +147,11 @@ void init_nrf24(){
   }
   // Defaults after init are 2.402 GHz (channel 2), 2Mbps, 0dBm
 
+}
+
+void print_image(){
+
+  for(int i = 0; i < buffer_length; i++){
+    Serial.println(image[i]);
+  }
 }

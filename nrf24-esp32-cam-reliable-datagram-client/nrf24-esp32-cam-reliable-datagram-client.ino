@@ -36,6 +36,14 @@ uint8_t finish_com[] = "Finish";
 
 //to store 28 pixels and then send it
 uint8_t pixels_chunk[28];
+uint8_t *final_chunk_payload = NULL;
+
+//how many chunks will the image be divided into
+uint32_t chunks;
+uint8_t final_pixel_chunk;
+
+// Dont put this on the stack:
+uint8_t buf[RH_NRF24_MAX_MESSAGE_LEN];
 
 void setup() 
 {
@@ -44,9 +52,6 @@ void setup()
   init_nrf24();
   setup_camera(); 
 }
-
-// Dont put this on the stack:
-uint8_t buf[RH_NRF24_MAX_MESSAGE_LEN];
 
 void loop()
 {
@@ -64,49 +69,81 @@ void loop()
   
   //ESP8266 can only allocate memory for up to 52k bytes,
   //so to be sure, send only images < 45000 bytes
-  
-  if((image->len) < 45000){
+  if((image->len) < 20000){
+
+    //not all images are divisible by 28, so we need to know how much pixels are left 
+    final_pixel_chunk = image->len % 28;
+    Serial.println(final_pixel_chunk);
+
+    chunks = image->len - final_pixel_chunk;
+    Serial.println(chunks);
+
+
     
+   
+    // 1. Send "Start"
     Serial.println("Start");
-    
-    // Send "Start"
     if (!manager.sendtoWait(start_com, sizeof(start_com), SERVER_ADDRESS)){
       
       Serial.println("Start failed");
     }
-    delay(200);
+
+
     
-    //send the buffer length as an arrray of characters
+    //2. send the buffer length as an arrray of characters
     if (!manager.sendtoWait((uint8_t*)char_buffer_length, sizeof(char_buffer_length), SERVER_ADDRESS)){
       
       Serial.print(char_buffer_length);
       Serial.println(" len failed");
     } 
-    delay(200);
-
-    //send pixel data in an array of 28 numbers each time
+    
+    //3. send pixel data in an array of 28 numbers each time
     int i, j = 0;
-    for(i = 0; i < 2799; i+=28){
+    for(i = 0; i < chunks; i+=28){
        for(j = 0; j < 28; j++){
         pixels_chunk[j] = image->buf[j + i];
       }
       
       if (!manager.sendtoWait(pixels_chunk, 28, SERVER_ADDRESS)){        
-        Serial.println("pixel fail");
+        //Serial.println("pixel fail");
       } 
     }
 
-   if (!manager.sendtoWait(finish_com, sizeof(finish_com), SERVER_ADDRESS)){
+
+    
+    //4. send "Final chunk" 
+    uint8_t final_chunk[] = "Final chunk";
+    if (!manager.sendtoWait(final_chunk, sizeof(final_chunk), SERVER_ADDRESS)){        
+        //Serial.println("final chunk fail");
+    } 
+
+    //5. send final chunk payload
+    final_chunk_payload = (uint8_t*)malloc(final_pixel_chunk);
+    for(int m = 0; m < final_pixel_chunk; m++){
+      final_chunk_payload[m] = image->buf[chunks + m];
+    }
+    if (!manager.sendtoWait(final_chunk_payload, sizeof(final_chunk_payload), SERVER_ADDRESS)){        
+        //Serial.println("pixel fail");
+    } 
+    free(final_chunk_payload);
+
+
+    //6. send "Finish"
+    if (!manager.sendtoWait(finish_com, sizeof(finish_com), SERVER_ADDRESS)){
       
       Serial.println("Finish failed");
-   }
-   
-   Serial.println("Finish"); 
-  }
-  
-  for(int i = 0; i < 83; i++){
+    }
+    Serial.println("Finish"); 
+
+
+    //print image buffer
+    for(int i = 0; i < image->len; i++){
     Serial.println(image->buf[i]);
+    }
   }
+
+  
+  
   esp_camera_fb_return(image);
   
   delay(10000);

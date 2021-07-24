@@ -47,10 +47,6 @@ int i = 0;
 void setup() 
 {
   Serial.begin(115200);
-
-  
-
-  
   init_nrf24();   
 }
 
@@ -93,12 +89,9 @@ void loop(){
         
         last = true;
       }
-      
-
-      
+    
       else if(counter > 1){
         //counter 2 and so on are pixel data
-        
         for(i = 0; i < 28; i++){
           image[i + (counter - 2)] = buf[i];
         }

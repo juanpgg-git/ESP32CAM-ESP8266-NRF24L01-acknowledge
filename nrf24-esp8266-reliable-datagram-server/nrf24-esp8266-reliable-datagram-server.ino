@@ -42,9 +42,15 @@ uint32_t chunks;
 uint8_t final_chunk[] = "Final chunk";
 bool last = false;
 
+int i = 0;
+
 void setup() 
 {
   Serial.begin(115200);
+
+  
+
+  
   init_nrf24();   
 }
 
@@ -77,7 +83,7 @@ void loop(){
       
       else if(last){
         
-        for(int i = 0; i < final_pixel_chunk; i++){
+        for(i = 0; i < final_pixel_chunk; i++){
           image[i + chunks] = buf[i];
         }
         last = false;
@@ -91,9 +97,8 @@ void loop(){
 
       
       else if(counter > 1){
-        Serial.println(".");
         //counter 2 and so on are pixel data
-        int i = 0;
+        
         for(i = 0; i < 28; i++){
           image[i + (counter - 2)] = buf[i];
         }
@@ -109,7 +114,10 @@ void loop(){
        memcpy(char_buffer_length, buf, 5);
        buffer_length = atoi(char_buffer_length);       
 
+       //how many pixels are left in the final chunk
        final_pixel_chunk = buffer_length % 28;
+
+       //how many chunks of 28 bytes are
        chunks = buffer_length - final_pixel_chunk; 
        
        //allocate a very big memory for the image buffer
@@ -137,6 +145,7 @@ void loop(){
  */
 void init_nrf24(){
 
+  
   if (!manager.init()){
     
     Serial.println("init failed");
@@ -146,12 +155,17 @@ void init_nrf24(){
     Serial.println("init succeed");
   }
   // Defaults after init are 2.402 GHz (channel 2), 2Mbps, 0dBm
-
+  if(!driver.setChannel(125)){
+    Serial.println("change channel failed");
+  }
+  else{
+    Serial.println("change channel succeed");
+  }
 }
 
 void print_image(){
 
-  for(int i = 0; i < buffer_length; i++){
+  for(i = 0; i < buffer_length; i++){
     Serial.println(image[i]);
   }
 }

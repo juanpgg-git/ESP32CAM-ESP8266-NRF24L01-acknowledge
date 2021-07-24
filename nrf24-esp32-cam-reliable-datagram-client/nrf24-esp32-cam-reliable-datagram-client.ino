@@ -69,8 +69,9 @@ void loop()
   
   //ESP8266 can only allocate memory for up to 52k bytes,
   //so to be sure, send only images < 45000 bytes
-  if((image->len) < 20000){
+  if(buffer_length < 20000){
 
+     Serial.println(buffer_length);
     //not all images are divisible by 28, so we need to know how much pixels are left 
     final_pixel_chunk = image->len % 28;
     Serial.println(final_pixel_chunk);
@@ -78,7 +79,7 @@ void loop()
     chunks = image->len - final_pixel_chunk;
     Serial.println(chunks);
 
-
+   
     
    
     // 1. Send "Start"
@@ -118,14 +119,13 @@ void loop()
     } 
 
     //5. send final chunk payload
-    final_chunk_payload = (uint8_t*)malloc(final_pixel_chunk);
     for(int m = 0; m < final_pixel_chunk; m++){
-      final_chunk_payload[m] = image->buf[chunks + m];
+      
+        pixels_chunk[m] = image->buf[chunks + m];
     }
-    if (!manager.sendtoWait(final_chunk_payload, sizeof(final_chunk_payload), SERVER_ADDRESS)){        
+    if (!manager.sendtoWait(pixels_chunk, sizeof(pixels_chunk), SERVER_ADDRESS)){        
         //Serial.println("pixel fail");
     } 
-    free(final_chunk_payload);
 
 
     //6. send "Finish"
@@ -137,7 +137,7 @@ void loop()
 
 
     //print image buffer
-    for(int i = 0; i < image->len; i++){
+    for(int i = 0; i < buffer_length; i++){
     Serial.println(image->buf[i]);
     }
   }
@@ -160,6 +160,12 @@ void init_nrf24(){
     Serial.println("init succeed");
   }
   // Defaults after init are 2.402 GHz (channel 2), 2Mbps, 0dBm
+  if(!driver.setChannel(125)){
+    Serial.println("change chanel failed");
+  }
+  else{
+    Serial.println("change channel succeed");
+  }
 }
 
 void setup_camera(){

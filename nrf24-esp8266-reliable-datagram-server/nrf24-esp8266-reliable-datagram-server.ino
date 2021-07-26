@@ -1,11 +1,8 @@
 #include <RHReliableDatagram.h>
 #include <RH_NRF24.h>
 #include <SPI.h>
-#include <WiFi.h>
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
-#include <WiFiClient.h>
-#include <ESP8266WebServer.h>
 
 #define CLIENT_ADDRESS 1
 #define SERVER_ADDRESS 2
@@ -13,13 +10,14 @@
 //function declaration
 void init_nrf24();
 void print_image();
+String sendPhoto();
 
 char* ssid = "TIGO-8E48";
 char* password = "4D9697504814";
 
 WiFiClient client;
 
-String serverName = "https://loona-test.000webhostapp.com";   // OR REPLACE WITH YOUR DOMAIN NAME
+String serverName = "loona-test.000webhostapp.com";   // OR REPLACE WITH YOUR DOMAIN NAME
 String serverPath = "/upload.php";     // The default serverPath should be upload.php
 
 const int serverPort = 80;
@@ -177,7 +175,7 @@ String sendPhoto() {
     client.println("Content-Type: multipart/form-data; boundary=RandomNerdTutorials");
     client.println();
     client.print(head);
-  
+    Serial.println("1");
     uint8_t *fbBuf = image;
     size_t fbLen = buffer_length;
     for (size_t n=0; n<fbLen; n=n+1024) {
@@ -190,6 +188,7 @@ String sendPhoto() {
         client.write(fbBuf, remainder);
       }
     }   
+    Serial.println("2");
     client.print(tail);
     
     int timoutTimer = 10000;
@@ -200,22 +199,35 @@ String sendPhoto() {
       Serial.print(".");
       delay(100);      
       while (client.available()) {
+        Serial.println("3");
         char c = client.read();
         if (c == '\n') {
+          Serial.println("4");
           if (getAll.length()==0) { state=true; }
           getAll = "";
         }
-        else if (c != '\r') { getAll += String(c); }
-        if (state==true) { getBody += String(c); }
+        else if (c != '\r') {
+          Serial.println("5");
+          getAll += String(c); 
+        }
+        if (state==true) {
+          Serial.println("6");
+          getBody += String(c); 
+          }
         startTimer = millis();
       }
-      if (getBody.length()>0) { break; }
+      if (getBody.length()>0) {
+        Serial.println("7");
+        break; 
+        }
     }
+    Serial.println("8");
     Serial.println();
     client.stop();
     Serial.println(getBody);
   }
   else {
+    Serial.println("9");
     getBody = "Connection to " + serverName +  " failed.";
     Serial.println(getBody);
   }

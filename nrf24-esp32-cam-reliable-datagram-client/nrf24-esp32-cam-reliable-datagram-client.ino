@@ -9,6 +9,10 @@
 //function declaration
 void init_nrf24();
 void setup_camera();
+void send_start();
+void send_len();
+void send_final_chunk();
+void send_finish();
 
 #define CLIENT_ADDRESS 1
 #define SERVER_ADDRESS 2
@@ -32,6 +36,7 @@ uint8_t pixel[1];
 
 //to let the receiver know the communication started or finished
 uint8_t start_com[] = "Start";
+uint8_t final_chunk[] = "Final chunk";
 uint8_t finish_com[] = "Finish";
 
 //to store 28 pixels and then send it
@@ -79,24 +84,13 @@ void loop()
     chunks = image->len - final_pixel_chunk;
     Serial.println(chunks);
 
-   
-    
-   
+
     // 1. Send "Start"
-    Serial.println("Start");
-    if (!manager.sendtoWait(start_com, sizeof(start_com), SERVER_ADDRESS)){
-      
-      Serial.println("Start failed");
-    }
-
-
+    send_start();
     
     //2. send the buffer length as an arrray of characters
-    if (!manager.sendtoWait((uint8_t*)char_buffer_length, sizeof(char_buffer_length), SERVER_ADDRESS)){
-      
-      Serial.print(char_buffer_length);
-      Serial.println(" len failed");
-    } 
+    send_len();
+    
     
     //3. send pixel data in an array of 28 numbers each time
     int i, j = 0;
@@ -109,15 +103,10 @@ void loop()
         //Serial.println("pixel fail");
       } 
     }
-
-
     
     //4. send "Final chunk" 
-    uint8_t final_chunk[] = "Final chunk";
-    if (!manager.sendtoWait(final_chunk, sizeof(final_chunk), SERVER_ADDRESS)){        
-        //Serial.println("final chunk fail");
-    } 
-
+    send_final_chunk();
+    
     //5. send final chunk payload
     for(int m = 0; m < final_pixel_chunk; m++){
       
@@ -126,16 +115,11 @@ void loop()
     if (!manager.sendtoWait(pixels_chunk, sizeof(pixels_chunk), SERVER_ADDRESS)){        
         //Serial.println("pixel fail");
     } 
-
+    
 
     //6. send "Finish"
-    if (!manager.sendtoWait(finish_com, sizeof(finish_com), SERVER_ADDRESS)){
-      
-      Serial.println("Finish failed");
-    }
-    Serial.println("Finish"); 
-
-
+    send_finish();
+    
     //print image buffer
     for(int i = 0; i < buffer_length; i++){
     Serial.println(image->buf[i]);
@@ -149,15 +133,51 @@ void loop()
   delay(10000);
 }
 
+void send_start(){
+
+  Serial.println("Start");
+  
+  if (!manager.sendtoWait(start_com, sizeof(start_com), SERVER_ADDRESS)){  
+      Serial.println("Start failed");
+  }
+}
+
+void send_len(){
+
+  Serial.print(buffer_length);
+  
+  if (!manager.sendtoWait((uint8_t*)char_buffer_length, sizeof(char_buffer_length), SERVER_ADDRESS)){
+    
+    Serial.println(" len failed");
+  } 
+}
+
+void send_final_chunk(){  
+  
+  if (!manager.sendtoWait(final_chunk, sizeof(final_chunk), SERVER_ADDRESS)){        
+    //Serial.println("final chunk fail");
+  }
+}
+
+void send_finish(){
+  
+  if (!manager.sendtoWait(finish_com, sizeof(finish_com), SERVER_ADDRESS)){
+    Serial.println("Finish failed");
+  }
+  
+  Serial.println("Finish"); 
+}
+
+
 void init_nrf24(){
   
   if (!manager.init()){
 
-    Serial.println("init failed");
+    Serial.println("nrf24 init failed");
   }
   else{
 
-    Serial.println("init succeed");
+    Serial.println("nrf24 init succeed");
   }
   // Defaults after init are 2.402 GHz (channel 2), 2Mbps, 0dBm
   if(!driver.setChannel(125)){

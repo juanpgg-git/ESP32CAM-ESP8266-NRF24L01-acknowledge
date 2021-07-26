@@ -84,9 +84,9 @@ void loop(){
       if(memcmp(buf, finish_com, 6) == 0){
         
         Serial.println((char*)buf);
-
-        print_image();
         sendPhoto();
+        print_image();
+        
         //to avoid unexpected behavior 
         if(image != NULL){
           
@@ -175,7 +175,7 @@ String sendPhoto() {
     client.println("Content-Type: multipart/form-data; boundary=RandomNerdTutorials");
     client.println();
     client.print(head);
-    Serial.println("1");
+    
     uint8_t *fbBuf = image;
     size_t fbLen = buffer_length;
     for (size_t n=0; n<fbLen; n=n+1024) {
@@ -188,7 +188,7 @@ String sendPhoto() {
         client.write(fbBuf, remainder);
       }
     }   
-    Serial.println("2");
+    
     client.print(tail);
     
     int timoutTimer = 10000;
@@ -199,7 +199,7 @@ String sendPhoto() {
       Serial.print(".");
       delay(100);      
       while (client.available()) {
-        Serial.println("3");
+        
         char c = client.read();
         if (c == '\n') {
           Serial.println("4");
@@ -207,27 +207,27 @@ String sendPhoto() {
           getAll = "";
         }
         else if (c != '\r') {
-          Serial.println("5");
+          
           getAll += String(c); 
         }
         if (state==true) {
-          Serial.println("6");
+          
           getBody += String(c); 
           }
         startTimer = millis();
       }
       if (getBody.length()>0) {
-        Serial.println("7");
+        
         break; 
         }
     }
-    Serial.println("8");
+    
     Serial.println();
     client.stop();
     Serial.println(getBody);
   }
   else {
-    Serial.println("9");
+    
     getBody = "Connection to " + serverName +  " failed.";
     Serial.println(getBody);
   }

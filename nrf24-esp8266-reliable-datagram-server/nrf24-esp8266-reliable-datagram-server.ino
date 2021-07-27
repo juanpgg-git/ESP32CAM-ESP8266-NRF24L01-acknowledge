@@ -1,6 +1,8 @@
 #include <RHReliableDatagram.h>
 #include <RH_NRF24.h>
 #include <SPI.h>
+#include <Arduino.h>
+#include <ESP8266WiFi.h>
 
 #define CLIENT_ADDRESS 1
 #define SERVER_ADDRESS 2
@@ -8,6 +10,17 @@
 //function declaration
 void init_nrf24();
 void print_image();
+String sendPhoto();
+
+char* ssid = "TIGO-8E48";
+char* password = "4D9697504814";
+
+WiFiClient client;
+
+String serverName = "loona-test.000webhostapp.com";   // OR REPLACE WITH YOUR DOMAIN NAME
+String serverPath = "/upload.php";     // The default serverPath should be upload.php
+
+const int serverPort = 80;
 
 // Singleton instance of the radio driver
 RH_NRF24 driver(2, 4);
@@ -47,6 +60,15 @@ int i = 0;
 void setup() 
 {
   Serial.begin(115200);
+
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, password);  
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
   init_nrf24();   
 }
 
@@ -62,7 +84,7 @@ void loop(){
       if(memcmp(buf, finish_com, 6) == 0){
         
         Serial.println((char*)buf);
-
+        sendPhoto();
         print_image();
         
         //to avoid unexpected behavior 
@@ -130,6 +152,86 @@ void loop(){
       }
     }
   }
+}
+
+String sendPhoto() {
+  String getAll;
+  String getBody;
+  
+  Serial.println("Connecting to server: " + serverName);
+
+  if (client.connect(serverName.c_str(), serverPort)) {
+    Serial.println("Connection successful!");    
+    String head = "--RandomNerdTutorials\r\nContent-Disposition: form-data; name=\"imageFile\"; filename=\"esp32-cam.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n";
+    String tail = "\r\n--RandomNerdTutorials--\r\n";
+
+    uint32_t imageLen = buffer_length;
+    uint32_t extraLen = head.length() + tail.length();
+    uint32_t totalLen = imageLen + extraLen;
+  
+    client.println("POST " + serverPath + " HTTP/1.1");
+    client.println("Host: " + serverName);
+    client.println("Content-Length: " + String(totalLen));
+    client.println("Content-Type: multipart/form-data; boundary=RandomNerdTutorials");
+    client.println();
+    client.print(head);
+    
+    uint8_t *fbBuf = image;
+    size_t fbLen = buffer_length;
+    for (size_t n=0; n<fbLen; n=n+1024) {
+      if (n+1024 < fbLen) {
+        client.write(fbBuf, 1024);
+        fbBuf += 1024;
+      }
+      else if (fbLen%1024>0) {
+        size_t remainder = fbLen%1024;
+        client.write(fbBuf, remainder);
+      }
+    }   
+    
+    client.print(tail);
+    
+    int timoutTimer = 10000;
+    long startTimer = millis();
+    boolean state = false;
+    
+    while ((startTimer + timoutTimer) > millis()) {
+      Serial.print(".");
+      delay(100);      
+      while (client.available()) {
+        
+        char c = client.read();
+        if (c == '\n') {
+          Serial.println("4");
+          if (getAll.length()==0) { state=true; }
+          getAll = "";
+        }
+        else if (c != '\r') {
+          
+          getAll += String(c); 
+        }
+        if (state==true) {
+          
+          getBody += String(c); 
+          }
+        startTimer = millis();
+      }
+      if (getBody.length()>0) {
+        
+        break; 
+        }
+    }
+    
+    Serial.println();
+    client.stop();
+    Serial.println(getBody);
+  }
+  else {
+    
+    getBody = "Connection to " + serverName +  " failed.";
+    Serial.println(getBody);
+  }
+  return getBody;
 }
 
 /*

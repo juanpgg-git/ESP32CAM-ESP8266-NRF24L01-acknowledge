@@ -100,10 +100,9 @@ void loop()
     int chunk_order = 1;
     int x = 0;
     int chunks2 = 3;
-    for(int i = 0; i < 28; i++){
+    for(int i = 1; i < 28; i++){
 
       pixels_chunk[i] = image->buf[(i - 1) + x];
-      Serial.println(pixels_chunk[i]);
 
       //it means we have 27 pixels ready for a given chunk
       if( i == 27){
@@ -111,23 +110,32 @@ void loop()
         //store the chunk order we are going to send
         pixels_chunk[0] = chunk_order;
         chunk_order++;
-        Serial.println(pixels_chunk[0]);
-        Serial.println(".");
         if (!manager.sendtoWait(pixels_chunk, 28, SERVER_ADDRESS)){        
           //Serial.println("pixel fail");
         } 
+        
         //reset the counter to start again
         i = 0;
         x += 27;
 
-        //it means we reached the final chunk and we must exit the foor loop
+        //it means we reached the final chunk and we must send the final chunk
         if(chunk_order > chunks2){
+          pixels_chunk[0] = chunk_order;
+          for(int m = 1; m < 20; m++){
+            pixels_chunk[m] =  image->buf[(m - 1) + (27*(chunk_order-1))];
+          }
+          if (!manager.sendtoWait(pixels_chunk, 20, SERVER_ADDRESS)){        
+            //Serial.println("pixel fail");
+          } 
           i = 28;
         }
       }
     }
-    
-    /*
+    for(int m = 0; m < 100; m++){
+      
+       Serial.println(image->buf[m]);
+    }
+        /*
     //3. send pixel data in an array of 28 numbers each time
     int i, j = 0;
     for(i = 0; i < chunks; i+=28){

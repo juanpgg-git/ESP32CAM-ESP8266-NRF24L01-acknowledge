@@ -56,6 +56,8 @@ uint8_t final_chunk[] = "Final chunk";
 bool last = false;
 
 int i = 0;
+int chunk_increase = 0;
+int x = 27;
 
 void setup() 
 {
@@ -84,7 +86,7 @@ void loop(){
       if(memcmp(buf, finish_com, 6) == 0){
         
         Serial.println((char*)buf);
-        sendPhoto();
+        //sendPhoto();
         print_image();
         
         //to avoid unexpected behavior 
@@ -113,12 +115,17 @@ void loop(){
       }
     
       else if(counter > 1){
-        //counter 2 and so on are pixel data
-        for(i = 0; i < 28; i++){
-          image[i + (counter - 2)] = buf[i];
+        
+        chunk_increase = buf[0] - 1;
+        if(chunk_increase > 3){
+          for(i = 1; i < 19; i++){
+            image[(i - 1) + (x * chunk_increase)] = buf[i]; 
+          }
         }
-
-        counter += 28;        
+        for(i = 1; i < 28; i++){
+          image[(i - 1) + (x * chunk_increase)] = buf[i];
+        }
+        
       }
       
       //this would be buffer length
@@ -240,7 +247,7 @@ String sendPhoto() {
  */
 void init_nrf24(){
 
-  
+  Serial.println("");
   if (!manager.init()){
     
     Serial.println("init failed");
@@ -260,7 +267,7 @@ void init_nrf24(){
 
 void print_image(){
 
-  for(i = 0; i < buffer_length; i++){
+  for(i = 0; i < 100; i++){
     Serial.println(image[i]);
   }
 }

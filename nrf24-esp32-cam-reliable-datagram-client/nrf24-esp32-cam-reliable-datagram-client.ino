@@ -2,6 +2,7 @@
 #include <RH_NRF24.h>
 #include <RHSoftwareSPI.h>
 #include <SPI.h>
+
 #include "esp_camera.h"
 #include "camera_gpio.h"
 
@@ -75,12 +76,14 @@ void loop()
   //ESP8266 can only allocate memory for up to 52k bytes,
   //so to be sure, send only images < 45000 bytes
   if(buffer_length < 20000){
-
-     Serial.println(buffer_length);
+      
+    Serial.println(buffer_length);
+     
+    
     //not all images are divisible by 28, so we need to know how much pixels are left 
     final_pixel_chunk = image->len % 28;
     Serial.println(final_pixel_chunk);
-
+    
     chunks = image->len - final_pixel_chunk;
     Serial.println(chunks);
 
@@ -90,8 +93,41 @@ void loop()
     
     //2. send the buffer length as an arrray of characters
     send_len();
+
+    //3. send pixel data in an array of 28 numbers.
+    //first number is the chunk #, and the rest is the pixel data
+    //int chunks2 = buffer_length / 27;//how many chunks are we going to send
+    int chunk_order = 1;
+    int x = 0;
+    int chunks2 = 3;
+    for(int i = 0; i < 28; i++){
+
+      pixels_chunk[i] = image->buf[(i - 1) + x];
+      Serial.println(pixels_chunk[i]);
+
+      //it means we have 27 pixels ready for a given chunk
+      if( i == 27){
+
+        //store the chunk order we are going to send
+        pixels_chunk[0] = chunk_order;
+        chunk_order++;
+        Serial.println(pixels_chunk[0]);
+        Serial.println(".");
+        if (!manager.sendtoWait(pixels_chunk, 28, SERVER_ADDRESS)){        
+          //Serial.println("pixel fail");
+        } 
+        //reset the counter to start again
+        i = 0;
+        x += 27;
+
+        //it means we reached the final chunk and we must exit the foor loop
+        if(chunk_order > chunks2){
+          i = 28;
+        }
+      }
+    }
     
-    
+    /*
     //3. send pixel data in an array of 28 numbers each time
     int i, j = 0;
     for(i = 0; i < chunks; i+=28){
@@ -103,7 +139,8 @@ void loop()
         //Serial.println("pixel fail");
       } 
     }
-    
+    */
+    /*
     //4. send "Final chunk" 
     send_final_chunk();
     
@@ -115,15 +152,16 @@ void loop()
     if (!manager.sendtoWait(pixels_chunk, sizeof(pixels_chunk), SERVER_ADDRESS)){        
         //Serial.println("pixel fail");
     } 
-    
+    */
 
     //6. send "Finish"
     send_finish();
-    
+    /*
     //print image buffer
     for(int i = 0; i < buffer_length; i++){
     Serial.println(image->buf[i]);
     }
+    */
   }
 
   

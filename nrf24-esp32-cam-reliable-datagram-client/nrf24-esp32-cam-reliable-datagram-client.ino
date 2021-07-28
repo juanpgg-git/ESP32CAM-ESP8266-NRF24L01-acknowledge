@@ -81,7 +81,6 @@ void loop()
     Serial.println(buffer_length);
      
     //not all images are divisible by 28, so we need to know how much pixels are left in the final chunk
-    buffer_length = 100; //just for testing
     final_pixel_chunk = buffer_length % 27;
 
     //how many chunks are we going to send
@@ -95,19 +94,17 @@ void loop()
 
     //3. send pixel data in an array of 28 numbers. First number is the 
     //chunk_iterator and the rest is the pixel data
-    int chunks = 3;
-    
+    buffer_length = 999;
+    chunks = buffer_length / 27;
+    final_pixel_chunk = buffer_length % 27;
     for(i = 1; i < 28; i++){
 
       pixel_payload[i] = image->buf[(i - 1) + x];
-      Serial.println(pixel_payload[i]);
       //it means we have 27 pixels ready for a given chunk
       if( i == 27){
 
         //store the chunk order we are going to send
         pixel_payload[0] = chunk_iterator;
-        Serial.println(pixel_payload[0]);
-        Serial.println("");
         chunk_iterator++;
         
         //send pixel payload
@@ -116,7 +113,7 @@ void loop()
         //reset the counter to start again
         i = 0;
         x += 27;
-
+        
         /*  4.Send the final chunk if we reached the final chunk and if 
          *  final_pixel_chunk is !=0( when buffer_length is not divisible exactly by 27)
          */
@@ -141,7 +138,7 @@ void loop()
     send_finish();
     
     //print image buffer
-    for(int i = 0; i < 100; i++){
+    for(int i = 0; i < buffer_length; i++){
     Serial.println(image->buf[i]);
     }
     
@@ -157,12 +154,9 @@ void send_final_pixel_payload(){
   int m = 0;
   
   pixel_payload[0] = chunk_iterator;
-  Serial.println(pixel_payload[0]);
   //store the remainder pixels 
-  final_pixel_chunk = 19;
   for(m = 1; m < final_pixel_chunk + 1; m++){
     pixel_payload[m] = image->buf[(m - 1) + (27*(chunk_iterator - 1))];
-    Serial.println(pixel_payload[m]);
   }
   
   if (!manager.sendtoWait(pixel_payload, final_pixel_chunk + 1, SERVER_ADDRESS)){        

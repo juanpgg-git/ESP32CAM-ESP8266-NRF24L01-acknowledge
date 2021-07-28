@@ -36,6 +36,7 @@ char char_buffer_length[5];
 
 //to let the receiver know the communication started or finished
 uint8_t start_com[] = "Start";
+uint8_t finish_com[] = "Finish";
 
 //to store chunk_interator and 27 pixels
 uint8_t pixel_payload[28];
@@ -80,7 +81,8 @@ void loop()
     Serial.println(buffer_length);
      
     //not all images are divisible by 28, so we need to know how much pixels are left in the final chunk
-    final_pixel_chunk = image->len % 27;
+    buffer_length = 81; //just for testing
+    final_pixel_chunk = buffer_length % 27;
 
     //how many chunks are we going to send
     chunks = buffer_length / 27;
@@ -94,6 +96,7 @@ void loop()
     //3. send pixel data in an array of 28 numbers. First number is the 
     //chunk_iterator and the rest is the pixel data
     int chunks = 3;
+    
     for(i = 1; i < 28; i++){
 
       pixel_payload[i] = image->buf[(i - 1) + x];
@@ -114,12 +117,18 @@ void loop()
         i = 0;
         x += 27;
 
-        //4. send the final chunk if we reached the final chunk
-        if(chunk_iterator > chunks){
+        /*  4.Send the final chunk if we reached the final chunk and if 
+         *  final_pixel_chunk is !=0( when buffer_length is not divisible exactly by 27)
+         */
+        if((final_pixel_chunk != 0) && (chunk_iterator > chunks)){
          
           //send final pixel payload
           send_final_pixel_payload();
           //reset i to 28 to exit the for loop
+          i = 28;
+        }
+        //this means there is no pixel left to be send, so we must exit the for loop
+        else if( chunk_iterator > chunks){
           i = 28;
         }
       }
@@ -127,9 +136,12 @@ void loop()
     //reset values to start over again
     chunk_iterator = 1;
     x = 0;
+
+    //5. send "Finish" so the receiver can now the communication is over
+    send_finish();
     
     //print image buffer
-    for(int i = 0; i < 100; i++){
+    for(int i = 0; i < 81; i++){
     Serial.println(image->buf[i]);
     }
     
@@ -163,6 +175,15 @@ void send_pixel_payload(){
    if (!manager.sendtoWait(pixel_payload, 28, SERVER_ADDRESS)){        
           //Serial.println("pixel fail");
    } 
+}
+
+void send_finish(){
+
+  Serial.println("Finish");
+  
+  if (!manager.sendtoWait(finish_com, sizeof(finish_com), SERVER_ADDRESS)){  
+      Serial.println("Start failed");
+  }
 }
 
 void send_start(){

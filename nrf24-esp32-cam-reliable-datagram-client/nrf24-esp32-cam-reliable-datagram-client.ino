@@ -81,7 +81,7 @@ void loop()
     Serial.println(buffer_length);
      
     //not all images are divisible by 28, so we need to know how much pixels are left in the final chunk
-    buffer_length = 81; //just for testing
+    buffer_length = 100; //just for testing
     final_pixel_chunk = buffer_length % 27;
 
     //how many chunks are we going to send
@@ -141,7 +141,7 @@ void loop()
     send_finish();
     
     //print image buffer
-    for(int i = 0; i < 81; i++){
+    for(int i = 0; i < 100; i++){
     Serial.println(image->buf[i]);
     }
     

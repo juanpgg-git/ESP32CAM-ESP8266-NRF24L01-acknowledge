@@ -34,8 +34,8 @@ uint8_t start_com[] = "Start";
 uint8_t finish_com[] = "Finish";
 
 /*The buffer length is being send as an array of characters,
-* so first you need to store it in a char array, and then convert 
-* it into an int for further use
+  so first you need to store it in a char array, and then convert
+  it into an int for further use
 */
 char char_buffer_length[5];
 int buffer_length = 0;
@@ -56,85 +56,91 @@ int i = 0;
 int chunk_iterator = 0;
 int x = 27;
 
-void setup() 
+void setup()
 {
   Serial.begin(115200);
 
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
-  WiFi.begin(ssid, password);  
+  WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
     delay(500);
   }
-  init_nrf24();   
+  init_nrf24();
 }
 
-void loop(){
-  
-  if (manager.available()){
-    
+void loop() {
+
+  if (manager.available()) {
+
     // Wait for a message addressed to us from the client
     uint8_t len = sizeof(buf);
-    if (manager.recvfromAck(buf, &len)){
-      
-      if(counter > 1){
-        
-        chunk_iterator = buf[0] - 1;
-        
-        if(chunk_iterator > 3){
-          for(i = 1; i < 19; i++){
-            image[(i - 1) + (x * chunk_iterator)] = buf[i]; 
-          }
-          //sendPhoto();
-          print_image();
+    if (manager.recvfromAck(buf, &len)) {
 
-          //to avoid unexpected behavior 
-          if(image != NULL){
-          
-            //free the allocated memory for the image buffer
-            free(image);
-          }
+      if (memcmp(buf, finish_com, 6) == 0) {
 
-          //reset the counter for the next communication
-          counter = 0; 
+        Serial.println((char*)buf);
+        
+        //sendPhoto();
+        print_image();
+
+        //to avoid unexpected behavior
+        if (image != NULL) {
+
+          //free the allocated memory for the image buffer
+          free(image);
         }
-        else{
-            for(i = 1; i < 28; i++){
-              image[(i - 1) + (x * chunk_iterator)] = buf[i];
+
+        //reset the counter for the next communication
+        counter = 0;
+      }
+      else if (counter > 1) {
+
+        chunk_iterator = buf[0] - 1;
+        //this means the buffer_length is not exactly divisible by 27
+        if (chunk_iterator > 3) {
+          for (i = 1; i < 19; i++) {
+            image[(i - 1) + (x * chunk_iterator)] = buf[i];
+          }
+
+        }
+        else {
+          for (i = 1; i < 28; i++) {
+            image[(i - 1) + (x * chunk_iterator)] = buf[i];
           }
         }
       }
-      
+
       //this would be buffer length
-      else if(counter == 1){
+      else if (counter == 1) {
 
-       //the buffer length comes as an array of characters,
-       //so convert it into an int
-       memcpy(char_buffer_length, buf, 5);
-       buffer_length = atoi(char_buffer_length);       
+        //the buffer length comes as an array of characters,
+        //so convert it into an int
+        memcpy(char_buffer_length, buf, 5);
+        buffer_length = atoi(char_buffer_length);
 
-       //how many pixels are left in the final chunk
-       final_pixel_chunk = buffer_length % 28;
+        //how many pixels are left in the final chunk
+        final_pixel_chunk = buffer_length % 28;
 
-       //how many chunks of 28 bytes are
-       chunks = buffer_length - final_pixel_chunk; 
-       
-       //allocate a very big memory for the image buffer
-       image = (uint8_t*)calloc(buffer_length, 1);
-       
-       Serial.println(char_buffer_length);
-       
-       counter = 2;
+        //how many chunks of 28 bytes are
+        chunks = buffer_length - final_pixel_chunk;
+
+        //allocate a very big memory for the image buffer
+        image = (uint8_t*)calloc(buffer_length, 1);
+
+        Serial.println(char_buffer_length);
+
+        counter = 2;
       }
 
       //if the received message is equal to "Start" then the communication started
-      else if(memcmp(buf, start_com, 5) == 0){
-        
-       Serial.println((char*)buf);
-       
-       counter = 1;
+      else if (memcmp(buf, start_com, 5) == 0) {
+
+        Serial.println((char*)buf);
+
+        counter = 1;
       }
     }
   }
@@ -143,77 +149,79 @@ void loop(){
 String sendPhoto() {
   String getAll;
   String getBody;
-  
+
   Serial.println("Connecting to server: " + serverName);
 
   if (client.connect(serverName.c_str(), serverPort)) {
-    Serial.println("Connection successful!");    
+    Serial.println("Connection successful!");
     String head = "--RandomNerdTutorials\r\nContent-Disposition: form-data; name=\"imageFile\"; filename=\"esp32-cam.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n";
     String tail = "\r\n--RandomNerdTutorials--\r\n";
 
     uint32_t imageLen = buffer_length;
     uint32_t extraLen = head.length() + tail.length();
     uint32_t totalLen = imageLen + extraLen;
-  
+
     client.println("POST " + serverPath + " HTTP/1.1");
     client.println("Host: " + serverName);
     client.println("Content-Length: " + String(totalLen));
     client.println("Content-Type: multipart/form-data; boundary=RandomNerdTutorials");
     client.println();
     client.print(head);
-    
+
     uint8_t *fbBuf = image;
     size_t fbLen = buffer_length;
-    for (size_t n=0; n<fbLen; n=n+1024) {
-      if (n+1024 < fbLen) {
+    for (size_t n = 0; n < fbLen; n = n + 1024) {
+      if (n + 1024 < fbLen) {
         client.write(fbBuf, 1024);
         fbBuf += 1024;
       }
-      else if (fbLen%1024>0) {
-        size_t remainder = fbLen%1024;
+      else if (fbLen % 1024 > 0) {
+        size_t remainder = fbLen % 1024;
         client.write(fbBuf, remainder);
       }
-    }   
-    
+    }
+
     client.print(tail);
-    
+
     int timoutTimer = 10000;
     long startTimer = millis();
     boolean state = false;
-    
+
     while ((startTimer + timoutTimer) > millis()) {
       Serial.print(".");
-      delay(100);      
+      delay(100);
       while (client.available()) {
-        
+
         char c = client.read();
         if (c == '\n') {
           Serial.println("4");
-          if (getAll.length()==0) { state=true; }
+          if (getAll.length() == 0) {
+            state = true;
+          }
           getAll = "";
         }
         else if (c != '\r') {
-          
-          getAll += String(c); 
+
+          getAll += String(c);
         }
-        if (state==true) {
-          
-          getBody += String(c); 
-          }
+        if (state == true) {
+
+          getBody += String(c);
+        }
         startTimer = millis();
       }
-      if (getBody.length()>0) {
-        
-        break; 
-        }
+      if (getBody.length() > 0) {
+
+        break;
+      }
     }
-    
+
     Serial.println();
     client.stop();
     Serial.println(getBody);
   }
   else {
-    
+
     getBody = "Connection to " + serverName +  " failed.";
     Serial.println(getBody);
   }
@@ -221,32 +229,32 @@ String sendPhoto() {
 }
 
 /*
- * Initialize the NRF24Ñ01 with the RHReliableDatagram
- * This class works with acknowledge bit
- */
-void init_nrf24(){
+   Initialize the NRF24Ñ01 with the RHReliableDatagram
+   This class works with acknowledge bit
+*/
+void init_nrf24() {
 
   Serial.println("");
-  if (!manager.init()){
-    
+  if (!manager.init()) {
+
     Serial.println("init failed");
   }
-  else{
+  else {
 
     Serial.println("init succeed");
   }
   // Defaults after init are 2.402 GHz (channel 2), 2Mbps, 0dBm
-  if(!driver.setChannel(125)){
+  if (!driver.setChannel(125)) {
     Serial.println("change channel failed");
   }
-  else{
+  else {
     Serial.println("change channel succeed");
   }
 }
 
-void print_image(){
+void print_image() {
 
-  for(i = 0; i < 100; i++){
+  for (i = 0; i < 100; i++) {
     Serial.println(image[i]);
   }
 }

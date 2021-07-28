@@ -12,7 +12,6 @@ void init_nrf24();
 void setup_camera();
 void send_start();
 void send_len();
-void send_final_chunk();
 void send_finish();
 
 #define CLIENT_ADDRESS 1
@@ -37,12 +36,10 @@ uint8_t pixel[1];
 
 //to let the receiver know the communication started or finished
 uint8_t start_com[] = "Start";
-uint8_t final_chunk[] = "Final chunk";
 uint8_t finish_com[] = "Finish";
 
 //to store 28 pixels and then send it
-uint8_t pixels_chunk[28];
-uint8_t *final_chunk_payload = NULL;
+uint8_t pixel_payload[28];
 
 //how many chunks will the image be divided into
 uint32_t chunks;
@@ -87,7 +84,6 @@ void loop()
     chunks = image->len - final_pixel_chunk;
     Serial.println(chunks);
 
-
     // 1. Send "Start"
     send_start();
     
@@ -99,18 +95,18 @@ void loop()
     //int chunks2 = buffer_length / 27;//how many chunks are we going to send
     int chunk_order = 1;
     int x = 0;
-    int chunks2 = 3;
+    int chunks2 = 3;//using this for the test as the buffer_length
     for(int i = 1; i < 28; i++){
 
-      pixels_chunk[i] = image->buf[(i - 1) + x];
+      pixel_payload[i] = image->buf[(i - 1) + x];
 
       //it means we have 27 pixels ready for a given chunk
       if( i == 27){
 
         //store the chunk order we are going to send
-        pixels_chunk[0] = chunk_order;
+        pixel_payload[0] = chunk_order;
         chunk_order++;
-        if (!manager.sendtoWait(pixels_chunk, 28, SERVER_ADDRESS)){        
+        if (!manager.sendtoWait(pixel_payload, 28, SERVER_ADDRESS)){        
           //Serial.println("pixel fail");
         } 
         
@@ -118,65 +114,33 @@ void loop()
         i = 0;
         x += 27;
 
-        //it means we reached the final chunk and we must send the final chunk
+        //4. send the final chunk
+        //it means we reached the final chunk
         if(chunk_order > chunks2){
-          pixels_chunk[0] = chunk_order;
+          pixel_payload[0] = chunk_order;
           for(int m = 1; m < 20; m++){
-            pixels_chunk[m] =  image->buf[(m - 1) + (27*(chunk_order-1))];
+            pixel_payload[m] =  image->buf[(m - 1) + (27*(chunk_order-1))];
           }
-          if (!manager.sendtoWait(pixels_chunk, 20, SERVER_ADDRESS)){        
+          if (!manager.sendtoWait(pixel_payload, 20, SERVER_ADDRESS)){        
             //Serial.println("pixel fail");
           } 
           i = 28;
         }
       }
     }
-    for(int m = 0; m < 100; m++){
-      
-       Serial.println(image->buf[m]);
-    }
-        /*
-    //3. send pixel data in an array of 28 numbers each time
-    int i, j = 0;
-    for(i = 0; i < chunks; i+=28){
-       for(j = 0; j < 28; j++){
-        pixels_chunk[j] = image->buf[j + i];
-      }
-      
-      if (!manager.sendtoWait(pixels_chunk, 28, SERVER_ADDRESS)){        
-        //Serial.println("pixel fail");
-      } 
-    }
-    */
-    /*
-    //4. send "Final chunk" 
-    send_final_chunk();
-    
-    //5. send final chunk payload
-    for(int m = 0; m < final_pixel_chunk; m++){
-      
-        pixels_chunk[m] = image->buf[chunks + m];
-    }
-    if (!manager.sendtoWait(pixels_chunk, sizeof(pixels_chunk), SERVER_ADDRESS)){        
-        //Serial.println("pixel fail");
-    } 
-    */
-
-    //6. send "Finish"
-    send_finish();
-    /*
+     //5. send "Finish"
+    send_finish(); 
+   
     //print image buffer
-    for(int i = 0; i < buffer_length; i++){
+    for(int i = 0; i < 100; i++){
     Serial.println(image->buf[i]);
     }
-    */
+    
   }
-
-  
   
   esp_camera_fb_return(image);
   
-  delay(10000);
+  delay(5000);
 }
 
 void send_start(){
@@ -196,13 +160,6 @@ void send_len(){
     
     Serial.println(" len failed");
   } 
-}
-
-void send_final_chunk(){  
-  
-  if (!manager.sendtoWait(final_chunk, sizeof(final_chunk), SERVER_ADDRESS)){        
-    //Serial.println("final chunk fail");
-  }
 }
 
 void send_finish(){

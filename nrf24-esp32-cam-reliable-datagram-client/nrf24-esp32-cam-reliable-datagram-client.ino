@@ -1,18 +1,21 @@
+#include <SPI.h>
 #include <RHReliableDatagram.h>
 #include <RH_NRF24.h>
 #include <RHSoftwareSPI.h>
-#include <SPI.h>
 
 #include "esp_camera.h"
 #include "camera_gpio.h"
 
-
 //function declaration
 void init_nrf24();
 void setup_camera();
+void take_image();
+void send_pixel_payload();
+void send_final_pixel_payload();
 void send_start();
 void send_len();
 void send_finish();
+
 
 #define CLIENT_ADDRESS 1
 #define SERVER_ADDRESS 2
@@ -31,22 +34,26 @@ RHReliableDatagram manager(driver, CLIENT_ADDRESS);
 int buffer_length;
 char char_buffer_length[5];
 
-//an array of numbers to store pixel data
-uint8_t pixel[1];
-
 //to let the receiver know the communication started or finished
 uint8_t start_com[] = "Start";
-uint8_t finish_com[] = "Finish";
 
-//to store 28 pixels and then send it
+//to store chunk_interator and 27 pixels
 uint8_t pixel_payload[28];
 
-//how many chunks will the image be divided into
-uint32_t chunks;
+//to iterate the image buffer and store it into the pixel_payload
+int chunk_iterator = 1;
+int x = 0;
+int i = 0;
+
+//how many chunks will the image be divided into and how many pixels are left in the final chunk
+uint16_t chunks;
 uint8_t final_pixel_chunk;
 
 // Dont put this on the stack:
 uint8_t buf[RH_NRF24_MAX_MESSAGE_LEN];
+
+//struct to store image data
+camera_fb_t * image;
 
 void setup() 
 {
@@ -58,14 +65,9 @@ void setup()
 
 void loop()
 {
-  //take an images
-  camera_fb_t * image = esp_camera_fb_get();
-  if(!image) {
-    Serial.println("Camera capture failed");
-    delay(1000);
-    ESP.restart();
-  }
-   
+  //take and image an store it in camera_fb_t * image
+  take_image();
+  
   //convert the buffer length to an array of characters
   buffer_length = image->len;
   itoa(buffer_length, char_buffer_length, 10);
@@ -73,16 +75,15 @@ void loop()
   //ESP8266 can only allocate memory for up to 52k bytes,
   //so to be sure, send only images < 45000 bytes
   if(buffer_length < 20000){
-      
+
+    Serial.print("buffer length: ");
     Serial.println(buffer_length);
      
-    
-    //not all images are divisible by 28, so we need to know how much pixels are left 
-    final_pixel_chunk = image->len % 28;
-    Serial.println(final_pixel_chunk);
-    
-    chunks = image->len - final_pixel_chunk;
-    Serial.println(chunks);
+    //not all images are divisible by 28, so we need to know how much pixels are left in the final chunk
+    final_pixel_chunk = image->len % 27;
+
+    //how many chunks are we going to send
+    chunks = buffer_length / 27;
 
     // 1. Send "Start"
     send_start();
@@ -90,47 +91,43 @@ void loop()
     //2. send the buffer length as an arrray of characters
     send_len();
 
-    //3. send pixel data in an array of 28 numbers.
-    //first number is the chunk #, and the rest is the pixel data
-    //int chunks2 = buffer_length / 27;//how many chunks are we going to send
-    int chunk_order = 1;
-    int x = 0;
-    int chunks2 = 3;//using this for the test as the buffer_length
-    for(int i = 1; i < 28; i++){
+    //3. send pixel data in an array of 28 numbers. First number is the 
+    //chunk_iterator and the rest is the pixel data
+    int chunks = 3;
+    for(i = 1; i < 28; i++){
 
       pixel_payload[i] = image->buf[(i - 1) + x];
-
+      Serial.println(pixel_payload[i]);
       //it means we have 27 pixels ready for a given chunk
       if( i == 27){
 
         //store the chunk order we are going to send
-        pixel_payload[0] = chunk_order;
-        chunk_order++;
-        if (!manager.sendtoWait(pixel_payload, 28, SERVER_ADDRESS)){        
-          //Serial.println("pixel fail");
-        } 
+        pixel_payload[0] = chunk_iterator;
+        Serial.println(pixel_payload[0]);
+        Serial.println("");
+        chunk_iterator++;
         
+        //send pixel payload
+        send_pixel_payload();
+       
         //reset the counter to start again
         i = 0;
         x += 27;
 
-        //4. send the final chunk
-        //it means we reached the final chunk
-        if(chunk_order > chunks2){
-          pixel_payload[0] = chunk_order;
-          for(int m = 1; m < 20; m++){
-            pixel_payload[m] =  image->buf[(m - 1) + (27*(chunk_order-1))];
-          }
-          if (!manager.sendtoWait(pixel_payload, 20, SERVER_ADDRESS)){        
-            //Serial.println("pixel fail");
-          } 
+        //4. send the final chunk if we reached the final chunk
+        if(chunk_iterator > chunks){
+         
+          //send final pixel payload
+          send_final_pixel_payload();
+          //reset i to 28 to exit the for loop
           i = 28;
         }
       }
     }
-     //5. send "Finish"
-    send_finish(); 
-   
+    //reset values to start over again
+    chunk_iterator = 1;
+    x = 0;
+    
     //print image buffer
     for(int i = 0; i < 100; i++){
     Serial.println(image->buf[i]);
@@ -141,6 +138,31 @@ void loop()
   esp_camera_fb_return(image);
   
   delay(5000);
+}
+
+void send_final_pixel_payload(){
+  
+  int m = 0;
+  
+  pixel_payload[0] = chunk_iterator;
+  Serial.println(pixel_payload[0]);
+  //store the remainder pixels 
+  final_pixel_chunk = 19;
+  for(m = 1; m < final_pixel_chunk + 1; m++){
+    pixel_payload[m] = image->buf[(m - 1) + (27*(chunk_iterator - 1))];
+    Serial.println(pixel_payload[m]);
+  }
+  
+  if (!manager.sendtoWait(pixel_payload, final_pixel_chunk + 1, SERVER_ADDRESS)){        
+            //Serial.println("pixel fail");
+  }
+}
+
+void send_pixel_payload(){
+
+   if (!manager.sendtoWait(pixel_payload, 28, SERVER_ADDRESS)){        
+          //Serial.println("pixel fail");
+   } 
 }
 
 void send_start(){
@@ -161,16 +183,6 @@ void send_len(){
     Serial.println(" len failed");
   } 
 }
-
-void send_finish(){
-  
-  if (!manager.sendtoWait(finish_com, sizeof(finish_com), SERVER_ADDRESS)){
-    Serial.println("Finish failed");
-  }
-  
-  Serial.println("Finish"); 
-}
-
 
 void init_nrf24(){
   
@@ -238,5 +250,16 @@ void setup_camera(){
   else if(err == ESP_OK){
     
     Serial.println("Camera init succeed");
+  }
+}
+
+void take_image(){
+
+  //take an images
+  image = esp_camera_fb_get();
+  if(!image) {
+    Serial.println("Camera capture failed");
+    delay(1000);
+    ESP.restart();
   }
 }

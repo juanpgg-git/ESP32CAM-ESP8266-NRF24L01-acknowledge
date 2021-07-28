@@ -53,7 +53,7 @@ uint8_t final_pixel_chunk;
 uint32_t chunks;
 
 int i = 0;
-int chunk_increase = 0;
+int chunk_iterator = 0;
 int x = 27;
 
 void setup() 
@@ -78,36 +78,31 @@ void loop(){
     // Wait for a message addressed to us from the client
     uint8_t len = sizeof(buf);
     if (manager.recvfromAck(buf, &len)){
-
-      //if the received message is equal to "Finish" then the communication finished
-      if(memcmp(buf, finish_com, 6) == 0){
-        
-        Serial.println((char*)buf);
-        //sendPhoto();
-        print_image();
-        
-        //to avoid unexpected behavior 
-        if(image != NULL){
-          
-          //free the allocated memory for the image buffer
-          free(image);
-        }
-        
-        //reset the counter for the next communication
-        counter = 0; 
-      }
       
-      else if(counter > 1){
+      if(counter > 1){
         
-        chunk_increase = buf[0] - 1;
-        if(chunk_increase > 3){
+        chunk_iterator = buf[0] - 1;
+        
+        if(chunk_iterator > 3){
           for(i = 1; i < 19; i++){
-            image[(i - 1) + (x * chunk_increase)] = buf[i]; 
+            image[(i - 1) + (x * chunk_iterator)] = buf[i]; 
           }
+          //sendPhoto();
+          print_image();
+
+          //to avoid unexpected behavior 
+          if(image != NULL){
+          
+            //free the allocated memory for the image buffer
+            free(image);
+          }
+
+          //reset the counter for the next communication
+          counter = 0; 
         }
         else{
             for(i = 1; i < 28; i++){
-              image[(i - 1) + (x * chunk_increase)] = buf[i];
+              image[(i - 1) + (x * chunk_iterator)] = buf[i];
           }
         }
       }

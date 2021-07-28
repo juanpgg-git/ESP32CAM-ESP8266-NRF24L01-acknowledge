@@ -99,7 +99,7 @@ void loop() {
       else if (counter > 1) {
 
         chunk_iterator = buf[0] - 1;
-
+        //this means the buffer_length is not exactly divisible by 27
         if (chunk_iterator > 3) {
           for (i = 1; i < 19; i++) {
             image[(i - 1) + (x * chunk_iterator)] = buf[i];

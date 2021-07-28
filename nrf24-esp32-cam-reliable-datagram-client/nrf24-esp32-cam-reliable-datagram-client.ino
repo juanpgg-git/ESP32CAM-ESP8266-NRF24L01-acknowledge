@@ -182,7 +182,7 @@ void send_finish(){
   Serial.println("Finish");
   
   if (!manager.sendtoWait(finish_com, sizeof(finish_com), SERVER_ADDRESS)){  
-      Serial.println("Start failed");
+      Serial.println("Finish failed");
   }
 }
 

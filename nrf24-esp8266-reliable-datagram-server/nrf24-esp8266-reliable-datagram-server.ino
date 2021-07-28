@@ -40,9 +40,6 @@ uint8_t finish_com[] = "Finish";
 char char_buffer_length[5];
 int buffer_length = 0;
 
-//to know which pixel data are we storing
-uint16_t counter = 0;
-
 //pointer to the image buffer
 uint8_t * image = NULL;
 
@@ -52,6 +49,7 @@ uint8_t buf[RH_NRF24_MAX_MESSAGE_LEN];
 uint8_t final_pixel_chunk;
 uint32_t chunks;
 
+int counter = 0;
 int i = 0;
 int chunk_iterator = 0;
 int x = 27;
@@ -85,52 +83,54 @@ void loop() {
         
         //sendPhoto();
         print_image();
-
+        Serial.println("1");
         //to avoid unexpected behavior
         if (image != NULL) {
 
           //free the allocated memory for the image buffer
           free(image);
+          image = NULL;
         }
-
+        Serial.println("2");
         //reset the counter for the next communication
         counter = 0;
       }
       else if (counter > 1) {
-
         chunk_iterator = buf[0] - 1;
+        Serial.println(chunk_iterator);
         //this means the buffer_length is not exactly divisible by 27
-        if (chunk_iterator > 3) {
-          for (i = 1; i < 19; i++) {
+        if (chunk_iterator > chunks) {
+          for (i = 1; i < final_pixel_chunk + 1; i++) {
             image[(i - 1) + (x * chunk_iterator)] = buf[i];
           }
-
+          Serial.println("not divisible");
         }
         else {
           for (i = 1; i < 28; i++) {
             image[(i - 1) + (x * chunk_iterator)] = buf[i];
           }
+          Serial.println("divisible");
         }
       }
 
       //this would be buffer length
       else if (counter == 1) {
 
+        Serial.println((char*)buf);
+
         //the buffer length comes as an array of characters,
         //so convert it into an int
         memcpy(char_buffer_length, buf, 5);
         buffer_length = atoi(char_buffer_length);
-
+        buffer_length = 999; //for test
         //how many pixels are left in the final chunk
-        final_pixel_chunk = buffer_length % 28;
+        final_pixel_chunk = buffer_length % 27;
 
-        //how many chunks of 28 bytes are
-        chunks = buffer_length - final_pixel_chunk;
+        //how many chunks of 27 bytes are
+        chunks = buffer_length / 27;
 
         //allocate a very big memory for the image buffer
         image = (uint8_t*)calloc(buffer_length, 1);
-
-        Serial.println(char_buffer_length);
 
         counter = 2;
       }
@@ -144,6 +144,14 @@ void loop() {
       }
     }
   }
+}
+
+void print_image() {
+
+  for (i = 0; i < buffer_length; i++) {
+    Serial.println(image[i]);
+  }
+  Serial.println("ok");
 }
 
 String sendPhoto() {
@@ -249,12 +257,5 @@ void init_nrf24() {
   }
   else {
     Serial.println("change channel succeed");
-  }
-}
-
-void print_image() {
-
-  for (i = 0; i < 100; i++) {
-    Serial.println(image[i]);
   }
 }

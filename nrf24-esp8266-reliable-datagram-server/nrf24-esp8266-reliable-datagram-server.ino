@@ -52,9 +52,6 @@ uint8_t buf[RH_NRF24_MAX_MESSAGE_LEN];
 uint8_t final_pixel_chunk;
 uint32_t chunks;
 
-uint8_t final_chunk[] = "Final chunk";
-bool last = false;
-
 int i = 0;
 int chunk_increase = 0;
 int x = 27;
@@ -98,22 +95,8 @@ void loop(){
         
         //reset the counter for the next communication
         counter = 0; 
-        last = false;
       }
       
-      else if(last){
-        
-        for(i = 0; i < final_pixel_chunk; i++){
-          image[i + chunks] = buf[i];
-        }
-        last = false;
-      }
-      
-      else if(memcmp(buf, final_chunk, 11) == 0){
-        
-        last = true;
-      }
-    
       else if(counter > 1){
         
         chunk_increase = buf[0] - 1;
@@ -122,10 +105,11 @@ void loop(){
             image[(i - 1) + (x * chunk_increase)] = buf[i]; 
           }
         }
-        for(i = 1; i < 28; i++){
-          image[(i - 1) + (x * chunk_increase)] = buf[i];
+        else{
+            for(i = 1; i < 28; i++){
+              image[(i - 1) + (x * chunk_increase)] = buf[i];
+          }
         }
-        
       }
       
       //this would be buffer length

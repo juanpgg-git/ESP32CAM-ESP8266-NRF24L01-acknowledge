@@ -106,7 +106,7 @@ void loop()
         //store the chunk order we are going to send
         pixel_payload[0] = chunk_iterator;
         chunk_iterator++;
-        
+        Serial.println(pixel_payload[0]);
         //send pixel payload
         send_pixel_payload();
        
@@ -154,6 +154,7 @@ void send_final_pixel_payload(){
   int m = 0;
   
   pixel_payload[0] = chunk_iterator;
+  Serial.println(pixel_payload[0]);
   //store the remainder pixels 
   for(m = 1; m < final_pixel_chunk + 1; m++){
     pixel_payload[m] = image->buf[(m - 1) + (27*(chunk_iterator - 1))];

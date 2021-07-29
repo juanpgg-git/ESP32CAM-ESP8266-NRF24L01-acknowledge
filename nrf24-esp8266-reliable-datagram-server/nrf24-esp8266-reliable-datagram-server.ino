@@ -109,7 +109,6 @@ void loop() {
       }
       else if (counter > 1) {
         chunk_iterator = buf[0];
-        Serial.println(chunk_iterator);
 
         for (i = 1; i < 28; i++) {
           image[(i - 1) + (27 * chunk_iterator) + (27 * m * 256)] = buf[i];
@@ -128,7 +127,7 @@ void loop() {
         //so convert it into an int
         memcpy(char_buffer_length, buf, 5);
         buffer_length = atoi(char_buffer_length);
-        buffer_length = 999; //for test
+
         //how many pixels are left in the final chunk
         final_pixel_chunk = buffer_length % 27;
 

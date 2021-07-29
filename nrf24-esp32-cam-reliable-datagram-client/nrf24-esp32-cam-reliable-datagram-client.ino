@@ -14,6 +14,7 @@ void send_pixel_payload();
 void send_final_pixel_payload();
 void send_start();
 void send_len();
+void send_last_chunk();
 void send_finish();
 
 
@@ -35,14 +36,15 @@ int buffer_length;
 char char_buffer_length[5];
 
 //to let the receiver know the communication started or finished
-uint8_t start_com[] = "Start";
-uint8_t finish_com[] = "Finish";
+uint8_t start[] = "Start";
+uint8_t finish[] = "Finish";
+uint8_t last_chunk[] = "Last chunk";
 
 //to store chunk_interator and 27 pixels
 uint8_t pixel_payload[28];
 
 //to iterate the image buffer and store it into the pixel_payload
-int chunk_iterator = 1;
+int chunk_iterator = 0;
 int x = 0;
 int i = 0;
 
@@ -94,19 +96,22 @@ void loop()
 
     //3. send pixel data in an array of 28 numbers. First number is the 
     //chunk_iterator and the rest is the pixel data
-    //buffer_length = 999;
-    //chunks = buffer_length / 27;
-    //final_pixel_chunk = buffer_length % 27;
+    buffer_length = 100;
+    final_pixel_chunk = buffer_length % 27;
+    chunks = buffer_length / 27;
     for(i = 1; i < 28; i++){
-
       pixel_payload[i] = image->buf[(i - 1) + x];
+      Serial.println(pixel_payload[i]);
       //it means we have 27 pixels ready for a given chunk
       if( i == 27){
 
         //store the chunk order we are going to send
         pixel_payload[0] = chunk_iterator;
+        Serial.print(pixel_payload[0]);
+        Serial.print(" : ");
+        Serial.println(chunk_iterator);
         chunk_iterator++;
-        Serial.println(pixel_payload[0]);
+        
         //send pixel payload
         send_pixel_payload();
        
@@ -114,27 +119,27 @@ void loop()
         i = 0;
         x += 27;
         
-        /*  4.Send the final chunk if we reached the final chunk and if 
-         *  final_pixel_chunk is !=0( when buffer_length is not divisible exactly by 27)
-         */
-        if((final_pixel_chunk != 0) && (chunk_iterator > chunks)){
-         
-          //send final pixel payload
-          send_final_pixel_payload();
-          //reset i to 28 to exit the for loop
-          i = 28;
-        }
         //this means there is no pixel left to be send, so we must exit the for loop
-        else if( chunk_iterator > chunks){
+        if( chunk_iterator == chunks){
+          
+          //reset values to start over again
+          chunk_iterator = 0;
+          x = 0;
           i = 28;
         }
       }
     }
-    //reset values to start over again
-    chunk_iterator = 1;
-    x = 0;
 
-    //5. send "Finish" so the receiver can now the communication is over
+    if(final_pixel_chunk != 0){
+      
+      //4. send "Last chunk"
+      send_last_chunk();
+
+      //5.Send the final pixel payload
+      send_final_pixel_payload();
+    }
+ 
+    //6. send "Finish" so the receiver can now the communication is over
     send_finish();
     
     //print image buffer
@@ -151,15 +156,13 @@ void loop()
 void send_final_pixel_payload(){
   
   int m = 0;
-  
-  pixel_payload[0] = chunk_iterator;
-  Serial.println(pixel_payload[0]);
   //store the remainder pixels 
-  for(m = 1; m < final_pixel_chunk + 1; m++){
-    pixel_payload[m] = image->buf[(m - 1) + (27*(chunk_iterator - 1))];
+  for(m = 0; m < final_pixel_chunk; m++){
+    pixel_payload[m] = image->buf[m + (27 * chunks)];
+    Serial.println(pixel_payload[m]);
   }
   
-  if (!manager.sendtoWait(pixel_payload, final_pixel_chunk + 1, SERVER_ADDRESS)){        
+  if (!manager.sendtoWait(pixel_payload, final_pixel_chunk, SERVER_ADDRESS)){        
             //Serial.println("pixel fail");
   }
 }
@@ -171,11 +174,20 @@ void send_pixel_payload(){
    } 
 }
 
+void send_last_chunk(){
+
+  Serial.println("Last chunk");
+  
+  if (!manager.sendtoWait(last_chunk, sizeof(last_chunk), SERVER_ADDRESS)){  
+      Serial.println("Last chunk failed");
+  }
+}
+
 void send_finish(){
 
   Serial.println("Finish");
   
-  if (!manager.sendtoWait(finish_com, sizeof(finish_com), SERVER_ADDRESS)){  
+  if (!manager.sendtoWait(finish, sizeof(finish), SERVER_ADDRESS)){  
       Serial.println("Finish failed");
   }
 }
@@ -184,7 +196,7 @@ void send_start(){
 
   Serial.println("Start");
   
-  if (!manager.sendtoWait(start_com, sizeof(start_com), SERVER_ADDRESS)){  
+  if (!manager.sendtoWait(start, sizeof(start), SERVER_ADDRESS)){  
       Serial.println("Start failed");
   }
 }

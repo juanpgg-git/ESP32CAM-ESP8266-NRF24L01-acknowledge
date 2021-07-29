@@ -80,7 +80,7 @@ void loop() {
       if (memcmp(buf, finish_com, 6) == 0) {
 
         Serial.println((char*)buf);
-        
+
         //sendPhoto();
         print_image();
         Serial.println("1");
@@ -96,20 +96,18 @@ void loop() {
         counter = 0;
       }
       else if (counter > 1) {
-        chunk_iterator = buf[0] - 1;
+        chunk_iterator = buf[0];
         Serial.println(chunk_iterator);
         //this means the buffer_length is not exactly divisible by 27
         if (chunk_iterator > chunks) {
           for (i = 1; i < final_pixel_chunk + 1; i++) {
-            image[(i - 1) + (x * chunk_iterator)] = buf[i];
+            image[(i - 1) + (x * (chunk_iterator - 1))] = buf[i];
           }
-          Serial.println("not divisible");
         }
         else {
           for (i = 1; i < 28; i++) {
-            image[(i - 1) + (x * chunk_iterator)] = buf[i];
+            image[(i - 1) + (x * (chunk_iterator - 1))] = buf[i];
           }
-          Serial.println("divisible");
         }
       }
 
@@ -148,10 +146,13 @@ void loop() {
 
 void print_image() {
 
-  for (i = 0; i < buffer_length; i++) {
-    Serial.println(image[i]);
+  if ( image != NULL) {
+    for (i = 0; i < buffer_length; i++) {
+      Serial.println(image[i]);
+    }
+    Serial.println("ok");
   }
-  Serial.println("ok");
+
 }
 
 String sendPhoto() {

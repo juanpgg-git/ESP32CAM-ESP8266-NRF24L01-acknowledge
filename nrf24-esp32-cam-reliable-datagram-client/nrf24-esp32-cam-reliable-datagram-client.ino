@@ -61,7 +61,7 @@ camera_fb_t * image;
 void setup() 
 {
   spi.setPins(12, 13, 14);
-  Serial.begin(115200);
+  Serial.begin(250000);
   init_nrf24();
   setup_camera(); 
 }
@@ -96,19 +96,14 @@ void loop()
 
     //3. send pixel data in an array of 28 numbers. First number is the 
     //chunk_iterator and the rest is the pixel data
-    buffer_length = 999;
-    final_pixel_chunk = buffer_length % 27;
-    chunks = buffer_length / 27;
+
     for(i = 1; i < 28; i++){
       pixel_payload[i] = image->buf[(i - 1) + x];
-      Serial.println(pixel_payload[i]);
       //it means we have 27 pixels ready for a given chunk
       if( i == 27){
 
         //store the chunk order we are going to send
         pixel_payload[0] = chunk_iterator;
-        //Serial.print(pixel_payload[0]);
-        //Serial.print(" : ");
         //Serial.println(chunk_iterator);
         chunk_iterator++;
         
@@ -159,7 +154,6 @@ void send_final_pixel_payload(){
   //store the remainder pixels 
   for(m = 0; m < final_pixel_chunk; m++){
     pixel_payload[m] = image->buf[m + (27 * chunks)];
-    Serial.println(pixel_payload[m]);
   }
   
   if (!manager.sendtoWait(pixel_payload, final_pixel_chunk, SERVER_ADDRESS)){        

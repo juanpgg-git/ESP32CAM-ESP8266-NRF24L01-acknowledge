@@ -94,9 +94,9 @@ void loop()
 
     //3. send pixel data in an array of 28 numbers. First number is the 
     //chunk_iterator and the rest is the pixel data
-    buffer_length = 999;
-    chunks = buffer_length / 27;
-    final_pixel_chunk = buffer_length % 27;
+    //buffer_length = 999;
+    //chunks = buffer_length / 27;
+    //final_pixel_chunk = buffer_length % 27;
     for(i = 1; i < 28; i++){
 
       pixel_payload[i] = image->buf[(i - 1) + x];
@@ -141,7 +141,6 @@ void loop()
     for(int i = 0; i < buffer_length; i++){
     Serial.println(image->buf[i]);
     }
-    
   }
   
   esp_camera_fb_return(image);

@@ -96,7 +96,7 @@ void loop()
 
     //3. send pixel data in an array of 28 numbers. First number is the 
     //chunk_iterator and the rest is the pixel data
-    buffer_length = 100;
+    buffer_length = 999;
     final_pixel_chunk = buffer_length % 27;
     chunks = buffer_length / 27;
     for(i = 1; i < 28; i++){
@@ -107,9 +107,9 @@ void loop()
 
         //store the chunk order we are going to send
         pixel_payload[0] = chunk_iterator;
-        Serial.print(pixel_payload[0]);
-        Serial.print(" : ");
-        Serial.println(chunk_iterator);
+        //Serial.print(pixel_payload[0]);
+        //Serial.print(" : ");
+        //Serial.println(chunk_iterator);
         chunk_iterator++;
         
         //send pixel payload

@@ -30,8 +30,9 @@ RHReliableDatagram manager(driver, SERVER_ADDRESS);
 
 //To compare with the received message, and know if the
 //communication is starting or finishing
-uint8_t start_com[] = "Start";
-uint8_t finish_com[] = "Finish";
+uint8_t start[] = "Start";
+uint8_t finish[] = "Finish";
+uint8_t last_chunk[] = "Last chunk";
 
 /*The buffer length is being send as an array of characters,
   so first you need to store it in a char array, and then convert
@@ -52,11 +53,12 @@ uint32_t chunks;
 int counter = 0;
 int i = 0;
 int chunk_iterator = 0;
-int x = 27;
+int m = 0;
+bool last = false;
 
 void setup()
 {
-  Serial.begin(115200);
+  Serial.begin(250000);
 
   Serial.println();
   Serial.print("Connecting to ");
@@ -77,13 +79,13 @@ void loop() {
     uint8_t len = sizeof(buf);
     if (manager.recvfromAck(buf, &len)) {
 
-      if (memcmp(buf, finish_com, 6) == 0) {
+      if (memcmp(buf, finish, 6) == 0) {
 
         Serial.println((char*)buf);
 
         //sendPhoto();
         print_image();
-        Serial.println("1");
+        
         //to avoid unexpected behavior
         if (image != NULL) {
 
@@ -91,23 +93,29 @@ void loop() {
           free(image);
           image = NULL;
         }
-        Serial.println("2");
+
         //reset the counter for the next communication
         counter = 0;
+        m = 0;
+        last = false;
+      }
+      else if (memcmp(buf, last_chunk, 10) == 0) {
+        last = true;
+      }
+      else if (last) {
+        for (i = 0; i < final_pixel_chunk; i++) {
+          image[i + (27 * chunks)] = buf[i];
+        }
       }
       else if (counter > 1) {
         chunk_iterator = buf[0];
         Serial.println(chunk_iterator);
-        //this means the buffer_length is not exactly divisible by 27
-        if (chunk_iterator > chunks) {
-          for (i = 1; i < final_pixel_chunk + 1; i++) {
-            image[(i - 1) + (x * (chunk_iterator - 1))] = buf[i];
-          }
+
+        for (i = 1; i < 28; i++) {
+          image[(i - 1) + (27 * chunk_iterator) + (27 * m * 256)] = buf[i];
         }
-        else {
-          for (i = 1; i < 28; i++) {
-            image[(i - 1) + (x * (chunk_iterator - 1))] = buf[i];
-          }
+        if (chunk_iterator == 255) {
+          m += 1;
         }
       }
 
@@ -120,7 +128,7 @@ void loop() {
         //so convert it into an int
         memcpy(char_buffer_length, buf, 5);
         buffer_length = atoi(char_buffer_length);
-        buffer_length = 999; //for test
+        buffer_length = 100; //for test
         //how many pixels are left in the final chunk
         final_pixel_chunk = buffer_length % 27;
 
@@ -134,10 +142,11 @@ void loop() {
       }
 
       //if the received message is equal to "Start" then the communication started
-      else if (memcmp(buf, start_com, 5) == 0) {
+      else if (memcmp(buf, start, 5) == 0) {
 
         Serial.println((char*)buf);
-
+        //add some image pointer conditional here for
+        //if the connection is lost at some point
         counter = 1;
       }
     }
@@ -150,7 +159,6 @@ void print_image() {
     for (i = 0; i < buffer_length; i++) {
       Serial.println(image[i]);
     }
-    Serial.println("ok");
   }
 
 }

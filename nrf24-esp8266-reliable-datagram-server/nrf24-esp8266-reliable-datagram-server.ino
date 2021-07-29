@@ -128,7 +128,7 @@ void loop() {
         //so convert it into an int
         memcpy(char_buffer_length, buf, 5);
         buffer_length = atoi(char_buffer_length);
-        buffer_length = 100; //for test
+        buffer_length = 1000; //for test
         //how many pixels are left in the final chunk
         final_pixel_chunk = buffer_length % 27;
 

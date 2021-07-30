@@ -23,7 +23,7 @@ String serverPath = "/upload.php";     // The default serverPath should be uploa
 const int serverPort = 80;
 
 // Singleton instance of the radio driver
-RH_NRF24 driver(2, 4);
+RH_NRF24 driver(2, 4);  //CSN, CE
 
 // Class to manage message delivery and receipt, using the driver declared above
 RHReliableDatagram manager(driver, SERVER_ADDRESS);
@@ -58,7 +58,7 @@ bool last = false;
 
 void setup()
 {
-  Serial.begin(250000);
+  Serial.begin(500000);
 
   Serial.println();
   Serial.print("Connecting to ");
@@ -83,33 +83,32 @@ void loop() {
 
         Serial.println((char*)buf);
 
-        //sendPhoto();
         print_image();
-        
+        sendPhoto();
+
         //to avoid unexpected behavior
         if (image != NULL) {
 
           //free the allocated memory for the image buffer
           free(image);
           image = NULL;
+        } 
+      }
+      if (last) {
+        for (i = 0; i < final_pixel_chunk; i++) {
+          image[i + (27 * chunks)] = buf[i];
         }
-
         //reset the counter for the next communication
         counter = 0;
         m = 0;
         last = false;
       }
-      else if (memcmp(buf, last_chunk, 10) == 0) {
+      if (memcmp(buf, last_chunk, 10) == 0) {
         last = true;
       }
-      else if (last) {
-        for (i = 0; i < final_pixel_chunk; i++) {
-          image[i + (27 * chunks)] = buf[i];
-        }
-      }
-      else if (counter > 1) {
-        chunk_iterator = buf[0];
 
+      if (counter > 1) {
+        chunk_iterator = buf[0];
         for (i = 1; i < 28; i++) {
           image[(i - 1) + (27 * chunk_iterator) + (27 * m * 256)] = buf[i];
         }
@@ -117,9 +116,8 @@ void loop() {
           m += 1;
         }
       }
-
       //this would be buffer length
-      else if (counter == 1) {
+      if (counter == 1) {
 
         Serial.println((char*)buf);
 
@@ -139,9 +137,8 @@ void loop() {
 
         counter = 2;
       }
-
       //if the received message is equal to "Start" then the communication started
-      else if (memcmp(buf, start, 5) == 0) {
+      if (memcmp(buf, start, 5) == 0) {
 
         Serial.println((char*)buf);
         //add some image pointer conditional here for
@@ -204,13 +201,11 @@ String sendPhoto() {
     boolean state = false;
 
     while ((startTimer + timoutTimer) > millis()) {
-      Serial.print(".");
       delay(100);
       while (client.available()) {
 
         char c = client.read();
         if (c == '\n') {
-          Serial.println("4");
           if (getAll.length() == 0) {
             state = true;
           }

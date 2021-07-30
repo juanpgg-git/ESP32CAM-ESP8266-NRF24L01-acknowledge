@@ -144,6 +144,13 @@ void loop() {
         //add some image pointer conditional here for
         //if the connection is lost at some point
         counter = 1;
+
+        if (image != NULL) {
+
+          //free the allocated memory for the image buffer
+          free(image);
+          image = NULL;
+        } 
       }
     }
   }

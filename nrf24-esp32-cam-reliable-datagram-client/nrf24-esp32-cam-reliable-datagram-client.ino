@@ -105,9 +105,11 @@ void loop()
         //store the chunk order we are going to send
         pixel_payload[0] = chunk_iterator;
         chunk_iterator++;
-        Serial.println(".");
+        
+        
         //send pixel payload
         send_pixel_payload();
+        
         //reset the counter to start again
         i = 0;
         x += 27;

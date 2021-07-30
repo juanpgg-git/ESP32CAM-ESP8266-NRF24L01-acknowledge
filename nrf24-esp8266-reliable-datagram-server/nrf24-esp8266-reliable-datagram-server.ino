@@ -83,9 +83,9 @@ void loop() {
 
         Serial.println((char*)buf);
 
-        print_image();
+        //print_image();
         sendPhoto();
-
+        ESP.restart();
         //to avoid unexpected behavior
         if (image != NULL) {
 
@@ -93,8 +93,12 @@ void loop() {
           free(image);
           image = NULL;
         } 
+        //reset the counter for the next communication
+        counter = 0;
+        m = 0;
+        last = false;
       }
-      if (last) {
+      else if (last) {
         for (i = 0; i < final_pixel_chunk; i++) {
           image[i + (27 * chunks)] = buf[i];
         }
@@ -103,11 +107,10 @@ void loop() {
         m = 0;
         last = false;
       }
-      if (memcmp(buf, last_chunk, 10) == 0) {
+      else if (memcmp(buf, last_chunk, 10) == 0) {
         last = true;
       }
-
-      if (counter > 1) {
+      else if (counter > 1) {
         chunk_iterator = buf[0];
         for (i = 1; i < 28; i++) {
           image[(i - 1) + (27 * chunk_iterator) + (27 * m * 256)] = buf[i];
@@ -117,7 +120,7 @@ void loop() {
         }
       }
       //this would be buffer length
-      if (counter == 1) {
+      else if (counter == 1) {
 
         Serial.println((char*)buf);
 
@@ -138,7 +141,7 @@ void loop() {
         counter = 2;
       }
       //if the received message is equal to "Start" then the communication started
-      if (memcmp(buf, start, 5) == 0) {
+      else if (memcmp(buf, start, 5) == 0) {
 
         Serial.println((char*)buf);
         //add some image pointer conditional here for
@@ -247,7 +250,7 @@ String sendPhoto() {
 }
 
 /*
-   Initialize the NRF24Ñ01 with the RHReliableDatagram
+   Initialize the NRF24L01 with the RHReliableDatagram
    This class works with acknowledge bit
 */
 void init_nrf24() {

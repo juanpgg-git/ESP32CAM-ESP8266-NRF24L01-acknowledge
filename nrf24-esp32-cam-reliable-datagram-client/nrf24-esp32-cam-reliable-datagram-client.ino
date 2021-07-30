@@ -25,7 +25,7 @@ void send_finish();
 RHSoftwareSPI spi;
 
 // Singleton instance of the radio driver
-RH_NRF24 driver(15, 2, spi);
+RH_NRF24 driver(15, 2, spi); //CSN, CE, SPI
 
 // Class to manage message delivery and receipt, using the driver declared above
 RHReliableDatagram manager(driver, CLIENT_ADDRESS);
@@ -60,7 +60,7 @@ camera_fb_t * image;
 
 void setup() 
 {
-  spi.setPins(12, 13, 14);
+  spi.setPins(12, 13, 14);//MISO, MOSI, SCK
   Serial.begin(250000);
   init_nrf24();
   setup_camera(); 
@@ -104,12 +104,10 @@ void loop()
 
         //store the chunk order we are going to send
         pixel_payload[0] = chunk_iterator;
-        //Serial.println(chunk_iterator);
         chunk_iterator++;
-        
+        Serial.println(".");
         //send pixel payload
         send_pixel_payload();
-       
         //reset the counter to start again
         i = 0;
         x += 27;
@@ -145,7 +143,7 @@ void loop()
   
   esp_camera_fb_return(image);
   
-  delay(5000);
+  delay(10000);
 }
 
 void send_final_pixel_payload(){

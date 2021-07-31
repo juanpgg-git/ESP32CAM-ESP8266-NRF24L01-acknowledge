@@ -17,6 +17,8 @@ void send_len();
 void send_last_chunk();
 void send_finish();
 
+#define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
+#define TIME_TO_SLEEP  20        /* Time ESP32 will go to sleep (in seconds) */
 
 #define CLIENT_ADDRESS 1
 #define SERVER_ADDRESS 2
@@ -68,6 +70,9 @@ void setup()
 
 void loop()
 {
+  //configure the wake up source for the deep sleep mode
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+  
   //take and image an store it in camera_fb_t * image
   take_image();
 
@@ -138,7 +143,10 @@ void loop()
 
     esp_camera_fb_return(image);
 
-    delay(20000);
+    //go to sleep 
+    esp_deep_sleep_start();
+
+    //This will avoid any bug when starting again
     ESP.restart();
   }
   else {
@@ -195,8 +203,6 @@ void send_start() {
 }
 
 void send_len() {
-
-  Serial.print(buffer_length);
 
   if (!manager.sendtoWait((uint8_t*)char_buffer_length, sizeof(char_buffer_length), SERVER_ADDRESS)) {
 
